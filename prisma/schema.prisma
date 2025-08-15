@@ -1,0 +1,89 @@
+// Prisma schema for Underneath
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  DOM
+  SUB
+  OBSERVER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+// Base User model - will be extended
+model User {
+  id             String     @id @default(uuid())
+  email          String     @unique
+  passwordHash   String
+  role           UserRole
+  status         UserStatus @default(PENDING)
+  
+  // Profile
+  displayName    String?
+  avatarUrl      String?
+  bio            String?
+  
+  // Security
+  twoFactorSecret String?
+  twoFactorEnabled Boolean  @default(false)
+  
+  // Timestamps
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  lastLoginAt    DateTime?
+  
+  // Relations will be added here
+  
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+// Session model for JWT refresh tokens
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+// Audit log for tracking all changes
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// More models will be added as we build features
