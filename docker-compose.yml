@@ -1,0 +1,110 @@
+# Docker Compose configuration for Underneath
+# No version field needed for modern Docker Compose
+
+services:
+  # Frontend Development Server
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      target: development
+    container_name: underneath_frontend
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000
+      - VITE_APP_NAME=Underneath
+    networks:
+      - underneath_network
+    command: npm run dev -- --host 0.0.0.0
+
+  # Backend API Server
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: development
+    container_name: underneath_backend
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+      - ./prisma:/app/prisma
+    ports:
+      - "3000:3000"
+      - "5555:5555"  # Prisma Studio
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://underneath_user:underneath_pass@postgres:5432/underneath_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=dev-secret-change-in-production
+      - JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production
+      - PORT=3000
+      - CORS_ORIGIN=http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - underneath_network
+    command: npm run dev
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    container_name: underneath_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - POSTGRES_USER=underneath_user
+      - POSTGRES_PASSWORD=underneath_pass
+      - POSTGRES_DB=underneath_db
+    ports:
+      - "5432:5432"
+    networks:
+      - underneath_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U underneath_user -d underneath_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:${REDIS_VERSION:-7}-alpine
+    container_name: underneath_redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - underneath_network
+    command: redis-server --appendonly yes --requirepass underneath_redis_pass
+
+  # Adminer for Database Management
+  adminer:
+    image: adminer:latest
+    container_name: underneath_adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - underneath_network
+    environment:
+      - ADMINER_DESIGN=dracula
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+  frontend_node_modules:
+  backend_node_modules:
+
+networks:
+  underneath_network:
+    driver: bridge
