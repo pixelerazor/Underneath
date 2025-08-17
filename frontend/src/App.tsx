@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
-import { Button } from './components/ui/button';
-import { logout } from './services/authService';
+import { DomLayout } from './layouts/DomLayout';
+import PlaceholderPage from './components/common/PlaceholderPage';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,31 +12,15 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Dashboard() {
-  const navigate = useNavigate();
+function DashboardRouter() {
+  const user = useAuthStore((state) => state.user);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  if (user?.role === 'DOM') {
+    return <DomLayout />;
+  }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-        <p className="mt-4">Welcome to your dashboard!</p>
-      </div>
-    </div>
-  );
+  // Später: SubLayout, ObserverLayout
+  return <Navigate to="/login" />;
 }
 
 export default function App() {
@@ -48,7 +32,7 @@ export default function App() {
         {/* Root redirect */}
         <Route
           path="/"
-          element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />}
+          element={<Navigate to={isAuthenticated ? '/dashboard/overview' : '/login'} replace />}
         />
 
         {/* Auth routes - only accessible when NOT authenticated */}
@@ -74,15 +58,88 @@ export default function App() {
           }
         />
 
-        {/* Protected routes - only accessible when authenticated */}
+        {/* Dashboard Routes */}
         <Route
-          path="/dashboard"
+          path="/dashboard/*"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardRouter />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="overview" element={<PlaceholderPage section="dashboard" tab="overview" />} />
+          <Route path="stats" element={<PlaceholderPage section="dashboard" tab="stats" />} />
+          <Route
+            path="activities"
+            element={<PlaceholderPage section="dashboard" tab="activities" />}
+          />
+        </Route>
+
+        {/* Tasks Routes */}
+        <Route
+          path="/tasks/*"
+          element={
+            <ProtectedRoute>
+              <DomLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="create" element={<PlaceholderPage section="tasks" tab="create" />} />
+          <Route path="active" element={<PlaceholderPage section="tasks" tab="active" />} />
+          <Route path="completed" element={<PlaceholderPage section="tasks" tab="completed" />} />
+          <Route path="templates" element={<PlaceholderPage section="tasks" tab="templates" />} />
+        </Route>
+
+        {/* Rules Routes */}
+        <Route
+          path="/rules/*"
+          element={
+            <ProtectedRoute>
+              <DomLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="general" element={<PlaceholderPage section="rules" tab="general" />} />
+          <Route path="daily" element={<PlaceholderPage section="rules" tab="daily" />} />
+          <Route path="protocols" element={<PlaceholderPage section="rules" tab="protocols" />} />
+          <Route
+            path="consequences"
+            element={<PlaceholderPage section="rules" tab="consequences" />}
+          />
+        </Route>
+
+        {/* Rewards Routes */}
+        <Route
+          path="/rewards/*"
+          element={
+            <ProtectedRoute>
+              <DomLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="available" element={<PlaceholderPage section="rewards" tab="available" />} />
+          <Route path="earned" element={<PlaceholderPage section="rewards" tab="earned" />} />
+          <Route path="shop" element={<PlaceholderPage section="rewards" tab="shop" />} />
+          <Route path="history" element={<PlaceholderPage section="rewards" tab="history" />} />
+        </Route>
+
+        {/* Punishments Routes */}
+        <Route
+          path="/punishments/*"
+          element={
+            <ProtectedRoute>
+              <DomLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="assign" element={<PlaceholderPage section="punishments" tab="assign" />} />
+          <Route path="active" element={<PlaceholderPage section="punishments" tab="active" />} />
+          <Route
+            path="completed"
+            element={<PlaceholderPage section="punishments" tab="completed" />}
+          />
+          <Route path="types" element={<PlaceholderPage section="punishments" tab="types" />} />
+        </Route>
 
         {/* Catch all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
