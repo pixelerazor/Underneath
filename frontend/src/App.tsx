@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { DomLayout } from './layouts/DomLayout';
+import { SubLayout } from './layouts/SubLayout';
 import PlaceholderPage from './components/common/PlaceholderPage';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -18,8 +19,11 @@ function DashboardRouter() {
   if (user?.role === 'DOM') {
     return <DomLayout />;
   }
+  if (user?.role === 'SUB') {
+    return <SubLayout />;
+  }
 
-  // Später: SubLayout, ObserverLayout
+  // Später: ObserverLayout
   return <Navigate to="/login" />;
 }
 
@@ -139,6 +143,24 @@ export default function App() {
             element={<PlaceholderPage section="punishments" tab="completed" />}
           />
           <Route path="types" element={<PlaceholderPage section="punishments" tab="types" />} />
+        </Route>
+
+        {/* Sub Routes */}
+        <Route
+          path="/sub/*"
+          element={
+            <ProtectedRoute>
+              <SubLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<PlaceholderPage section="sub" tab="dashboard" />} />
+          <Route path="tasks" element={<PlaceholderPage section="sub" tab="tasks" />} />
+          <Route path="rules" element={<PlaceholderPage section="sub" tab="rules" />} />
+          <Route path="rewards" element={<PlaceholderPage section="sub" tab="rewards" />} />
+          <Route path="punishments" element={<PlaceholderPage section="sub" tab="punishments" />} />
+          <Route path="journal" element={<PlaceholderPage section="sub" tab="journal" />} />
+          <Route path="report" element={<PlaceholderPage section="sub" tab="report" />} />
         </Route>
 
         {/* Catch all route */}

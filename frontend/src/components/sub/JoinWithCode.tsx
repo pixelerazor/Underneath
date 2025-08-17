@@ -1,0 +1,127 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, KeyRound } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { useConnectionStore } from '@/store/useConnectionStore';
+import { cn } from '@/lib/utils';
+
+export function JoinWithCode() {
+  const [code, setCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { setConnection } = useConnectionStore();
+
+  // Format code while typing (XXX-XXX-XXX)
+  const formatCode = (input: string) => {
+    const cleaned = input.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    const matches = cleaned.match(/[A-Z0-9]{1,3}/g);
+    return matches ? matches.join('-') : cleaned;
+  };
+
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCode(e.target.value);
+    setCode(formatted);
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Validiere Code-Format
+      const codeRegex = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/;
+      if (!codeRegex.test(code)) {
+        throw new Error('Ungültiges Code-Format');
+      }
+
+      // TODO: Hier später echten API-Call einfügen.
+      // Vorläufig: DOM-Verbindung lokal setzen.
+      setConnection({
+        dom: {
+          id: code,
+          name: 'DOM',
+          level: 1,
+        },
+      });
+
+      toast.success('Verbindung hergestellt', {
+        description: 'Du wurdest erfolgreich mit deinem DOM verbunden.',
+      });
+
+      // Weiter ins SUB-Dashboard
+      navigate('/sub/dashboard', { replace: true });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Ein unerwarteter Fehler ist aufgetreten';
+      setError(message);
+      toast.error('Verbindung fehlgeschlagen', { description: message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="flex flex-col items-center">
+          <div className="rounded-full bg-primary/10 p-3 mb-4">
+            <Heart className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-center">Willkommen bei Underneath</h1>
+          <p className="mt-2 text-center text-muted-foreground">
+            Verbinde dich mit deinem DOM durch Eingabe des Einladungscodes
+          </p>
+        </div>
+
+        {/* Code Input Card */}
+        <Card className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="code" className="text-sm font-medium">
+                  Einladungscode
+                </Label>
+              </div>
+              <Input
+                id="code"
+                type="text"
+                placeholder="XXX-XXX-XXX"
+                value={code}
+                onChange={handleCodeChange}
+                className={cn(
+                  'text-center font-mono text-lg tracking-wider',
+                  error && 'border-destructive'
+                )}
+                maxLength={11}
+                autoComplete="off"
+                autoCapitalize="characters"
+                disabled={isLoading}
+              />
+              {error && <p className="text-sm text-destructive mt-1">{error}</p>}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={code.length < 11 || isLoading}>
+              {isLoading ? 'Verbinde...' : 'Verbinden'}
+            </Button>
+          </form>
+        </Card>
+
+        {/* Info Text */}
+        <p className="text-sm text-center text-muted-foreground">
+          Der Einladungscode wurde dir von deinem DOM zur Verfügung gestellt.
+          <br />
+          Solltest du keinen Code haben, bitte deinen DOM darum.
+        </p>
+      </div>
+    </div>
+  );
+}
