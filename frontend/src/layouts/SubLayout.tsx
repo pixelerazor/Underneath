@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Menu, Bell, Heart, Clock, AlertTriangle } from 'lucide-react';
+import { Menu, Bell, Heart, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -18,13 +18,7 @@ const SIDEBAR_ITEMS = [
   { id: 'rewards', label: 'Belohnungen', path: 'rewards' },
   { id: 'punishments', label: 'Strafen', path: 'punishments' },
   { id: 'journal', label: 'Tagebuch', path: 'journal' },
-  {
-    id: 'emergency',
-    label: 'Notfall',
-    path: 'emergency',
-    variant: 'destructive',
-    icon: AlertTriangle,
-  },
+  { id: 'report', label: 'Report', path: 'report', icon: Clock },
 ];
 
 export function SubLayout() {
@@ -32,7 +26,7 @@ export function SubLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
-  const { connectedDom } = useConnectionStore();
+  const { connectedDom, connectedSub } = useConnectionStore();
 
   // Ohne DOM-Verbindung -> JoinWithCode anzeigen
   if (!connectedDom) {
@@ -44,12 +38,14 @@ export function SubLayout() {
     setSidebarOpen(false);
   };
 
-  // Platzhalter-Progress-Werte, bis echte Sub-Daten vorhanden sind
-  const level = 1;
-  const points = 0;
-  const maxPoints = 100;
-  const tasksCompleted = 0;
-  const tasksTotal = 0;
+  // Werte aus dem Store ziehen (falls vorhanden), sonst Platzhalter
+  const level = connectedDom.level ?? 1;
+  const points = connectedSub?.points ?? 0;
+  const maxPoints = connectedSub?.maxPoints ?? 100;
+
+  const tasksCompleted = 0; // TODO: später aus API/Store laden
+  const tasksTotal = 0; // TODO: später aus API/Store laden
+
   const tasksPct = tasksTotal > 0 ? (tasksCompleted / tasksTotal) * 100 : 0;
   const pointsPct = maxPoints > 0 ? (points / maxPoints) * 100 : 0;
 
@@ -79,9 +75,7 @@ export function SubLayout() {
                         onClick={() => handleNavigation(item.path)}
                         className={cn(
                           'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2',
-                          active ? 'bg-secondary' : 'hover:bg-secondary/50',
-                          item.variant === 'destructive' &&
-                            'text-destructive hover:text-destructive'
+                          active ? 'bg-secondary' : 'hover:bg-secondary/50'
                         )}
                       >
                         {item.icon && <item.icon className="h-4 w-4" />}
@@ -135,7 +129,7 @@ export function SubLayout() {
           <div className="rounded-lg border p-4 bg-card">
             <h3 className="font-semibold mb-2">Status</h3>
             <div className="text-2xl font-bold text-primary">{user?.status ?? 'Aktiv'}</div>
-            <p className="text-sm text-muted-foreground mt-2">Seit {/* Platzhalter */} heute</p>
+            <p className="text-sm text-muted-foreground mt-2">Seit {/* TODO */} heute</p>
           </div>
         </div>
 

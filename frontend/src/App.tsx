@@ -23,7 +23,7 @@ function DashboardRouter() {
     return <SubLayout />;
   }
 
-  // Später: ObserverLayout
+  // Später evtl. ObserverLayout
   return <Navigate to="/login" />;
 }
 
@@ -39,7 +39,7 @@ export default function App() {
           element={<Navigate to={isAuthenticated ? '/dashboard/overview' : '/login'} replace />}
         />
 
-        {/* Auth routes - only accessible when NOT authenticated */}
+        {/* Auth routes */}
         <Route
           path="/login"
           element={
@@ -50,7 +50,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/register"
           element={
@@ -62,7 +61,7 @@ export default function App() {
           }
         />
 
-        {/* Dashboard Routes */}
+        {/* Dashboard */}
         <Route
           path="/dashboard/*"
           element={
@@ -79,7 +78,7 @@ export default function App() {
           />
         </Route>
 
-        {/* Tasks Routes */}
+        {/* Tasks */}
         <Route
           path="/tasks/*"
           element={
@@ -94,7 +93,7 @@ export default function App() {
           <Route path="templates" element={<PlaceholderPage section="tasks" tab="templates" />} />
         </Route>
 
-        {/* Rules Routes */}
+        {/* Rules */}
         <Route
           path="/rules/*"
           element={
@@ -112,7 +111,7 @@ export default function App() {
           />
         </Route>
 
-        {/* Rewards Routes */}
+        {/* Rewards */}
         <Route
           path="/rewards/*"
           element={
@@ -127,7 +126,7 @@ export default function App() {
           <Route path="history" element={<PlaceholderPage section="rewards" tab="history" />} />
         </Route>
 
-        {/* Punishments Routes */}
+        {/* Punishments */}
         <Route
           path="/punishments/*"
           element={
@@ -145,7 +144,7 @@ export default function App() {
           <Route path="types" element={<PlaceholderPage section="punishments" tab="types" />} />
         </Route>
 
-        {/* Sub Routes */}
+        {/* Sub routes */}
         <Route
           path="/sub/*"
           element={
@@ -163,7 +162,7 @@ export default function App() {
           <Route path="report" element={<PlaceholderPage section="sub" tab="report" />} />
         </Route>
 
-        {/* Catch all route */}
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -19,8 +19,8 @@ export function JoinWithCode() {
   // Format code while typing (XXX-XXX-XXX)
   const formatCode = (input: string) => {
     const cleaned = input.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    const matches = cleaned.match(/[A-Z0-9]{1,3}/g);
-    return matches ? matches.join('-') : cleaned;
+    const parts = cleaned.match(/[A-Z0-9]{1,3}/g);
+    return parts ? parts.join('-') : cleaned;
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,12 +41,12 @@ export function JoinWithCode() {
         throw new Error('Ungültiges Code-Format');
       }
 
-      // TODO: Hier später echten API-Call einfügen.
-      // Vorläufig: DOM-Verbindung lokal setzen.
+      // TODO: Später echten API-Call (validate + createConnection) einbauen.
+      // Vorläufig: DOM-Verbindung lokal setzen, damit das SubLayout funktioniert.
       setConnection({
         dom: {
-          id: code,
-          name: 'DOM',
+          id: code, // Platzhalter: code als id
+          name: 'DOM', // Platzhalter-Name, bis echte Daten zurückkommen
           level: 1,
         },
       });
@@ -55,7 +55,7 @@ export function JoinWithCode() {
         description: 'Du wurdest erfolgreich mit deinem DOM verbunden.',
       });
 
-      // Weiter ins SUB-Dashboard
+      // Weiter ins SUB-Dashboard (entspricht deinen /sub/* Routen)
       navigate('/sub/dashboard', { replace: true });
     } catch (err) {
       const message =
