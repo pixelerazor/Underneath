@@ -37,6 +37,12 @@ services:
       - '3000:3000'
       - '5555:5555' # Prisma Studio
     environment:
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_SECURE=${SMTP_SECURE}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - FRONTEND_URL=${FRONTEND_URL}
       - NODE_ENV=development
       - DATABASE_URL=postgresql://underneath_user:underneath_pass@postgres:5432/underneath_db
       - REDIS_URL=redis://redis:6379
