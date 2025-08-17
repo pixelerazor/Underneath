@@ -24,30 +24,46 @@ enum UserStatus {
   PENDING
 }
 
-// Base User model - will be extended
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  PAUSED
+  TERMINATED
+}
+
+// Base User model
 model User {
-  id             String     @id @default(uuid())
-  email          String     @unique
-  passwordHash   String
-  role           UserRole
-  status         UserStatus @default(PENDING)
-  
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  role         UserRole
+  status       UserStatus @default(PENDING)
+
   // Profile
-  displayName    String?
-  avatarUrl      String?
-  bio            String?
-  
+  displayName String?
+  avatarUrl   String?
+  bio         String?
+
   // Security
-  twoFactorSecret String?
-  twoFactorEnabled Boolean  @default(false)
-  
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
+
   // Timestamps
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  lastLoginAt    DateTime?
-  
-  // Relations will be added here
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Relations
+  domInvitations Invitation[] @relation("DomInvitations")
+  domConnections Connection[] @relation("DomConnections")
+  subConnections Connection[] @relation("SubConnections")
+
   @@index([email])
   @@index([role])
   @@index([status])
@@ -62,28 +78,63 @@ model Session {
   ipAddress    String?
   expiresAt    DateTime
   createdAt    DateTime @default(now())
-  
+
   @@index([userId])
   @@index([refreshToken])
 }
 
+// Invitation Model
+model Invitation {
+  id         String           @id @default(uuid())
+  code       String           @unique
+  domId      String
+  email      String
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  // Relations
+  dom User @relation(name: "DomInvitations", fields: [domId], references: [id])
+
+  @@index([code])
+  @@index([domId])
+  @@index([status])
+}
+
+// Connection Model
+model Connection {
+  id        String           @id @default(uuid())
+  domId     String
+  subId     String
+  status    ConnectionStatus @default(ACTIVE)
+  startedAt DateTime         @default(now())
+  endedAt   DateTime?
+
+  // Relations
+  dom User @relation(name: "DomConnections", fields: [domId], references: [id])
+  sub User @relation(name: "SubConnections", fields: [subId], references: [id])
+
+  @@index([domId])
+  @@index([subId])
+  @@index([status])
+}
+
 // Audit log for tracking all changes
 model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  action     String
-  entity     String
-  entityId   String?
-  oldValue   Json?
-  newValue   Json?
-  metadata   Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-  
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  Json?
+  newValue  Json?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([entity, entityId])
   @@index([createdAt])
 }
-
-// More models will be added as we build features

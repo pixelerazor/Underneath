@@ -1,16 +1,18 @@
+// backend/src/lib/prisma.ts
 import { PrismaClient } from '@prisma/client';
 
-// Globale Variable für Prisma Client in Development
 declare global {
-  var prisma: PrismaClient | undefined;
+  // Verhindert, dass bei Hot-Reload mehrere Instanzen erzeugt werden (DEV)
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined;
 }
 
-// Singleton Pattern für Prisma Client
-export const prisma = global.prisma || new PrismaClient();
+export const prisma =
+  global.__prisma ||
+  new PrismaClient({
+    log: ['error', 'warn'],
+  });
 
-// Speichere Client in globaler Variable im Development
-if (process.env.NODE_ENV === 'development') {
-  global.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') {
+  global.__prisma = prisma;
 }
-
-export default prisma;
