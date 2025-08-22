@@ -6,7 +6,6 @@ import { prisma } from '../lib/prisma';
 import * as authService from '../services/authService';
 import { UserRole, UserStatus } from '@prisma/client';
 
-// Validierungs-Schemas
 const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -24,15 +23,10 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required')
 });
 
-/**
- * User Registration
- */
 export async function register(req: Request, res: Response) {
   try {
-    // Validiere Input
     const validatedData = registerSchema.parse(req.body);
     
-    // Prüfe ob Email bereits existiert
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email.toLowerCase() }
     });
@@ -44,28 +38,24 @@ export async function register(req: Request, res: Response) {
       });
     }
 
-    // Hash Password
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(validatedData.password, salt);
 
-    // Erstelle User
     const user = await prisma.user.create({
       data: {
         email: validatedData.email.toLowerCase(),
         passwordHash,
         role: validatedData.role as UserRole,
-        status: UserStatus.ACTIVE // Direkt aktiv, später ggf. PENDING für Email-Verifikation
+        status: UserStatus.ACTIVE
       }
     });
 
-    // Generiere Tokens
     const { accessToken, refreshToken, expiresIn } = await authService.generateTokens(
       user,
       req.headers['user-agent'],
       req.ip
     );
 
-    // Erstelle Audit Log
     await prisma.auditLog.create({
       data: {
         userId: user.id,
@@ -81,7 +71,6 @@ export async function register(req: Request, res: Response) {
       }
     });
 
-    // Sende Response
     return res.status(201).json({
       success: true,
       data: {
@@ -114,16 +103,11 @@ export async function register(req: Request, res: Response) {
   }
 }
 
-/**
- * User Login
- */
 export async function login(req: Request, res: Response) {
   try {
-    // Validiere Input
     const validatedData = loginSchema.parse(req.body);
 
-    // Authentifiziere mit Passport Local Strategy
-    passport.authenticate('local', async (err: any, user: any, info: any) => {
+    return passport.authenticate('local', { session: false }, async (err: any, user: any, info: any) => {
       if (err) {
         console.error('Login error:', err);
         return res.status(500).json({
@@ -139,14 +123,12 @@ export async function login(req: Request, res: Response) {
         });
       }
 
-      // Generiere Tokens
       const { accessToken, refreshToken, expiresIn } = await authService.generateTokens(
         user,
         req.headers['user-agent'],
         req.ip
       );
 
-      // Erstelle Audit Log
       await prisma.auditLog.create({
         data: {
           userId: user.id,
@@ -160,13 +142,11 @@ export async function login(req: Request, res: Response) {
         }
       });
 
-      // Update lastLoginAt
       await prisma.user.update({
         where: { id: user.id },
         data: { lastLoginAt: new Date() }
       });
 
-      // Sende Response
       return res.json({
         success: true,
         data: {
@@ -200,15 +180,10 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-/**
- * Token Refresh
- */
 export async function refresh(req: Request, res: Response) {
   try {
-    // Validiere Input
     const validatedData = refreshSchema.parse(req.body);
 
-    // Validiere Refresh Token
     const user = await authService.validateRefreshToken(validatedData.refreshToken);
 
     if (!user) {
@@ -218,17 +193,14 @@ export async function refresh(req: Request, res: Response) {
       });
     }
 
-    // Generiere neue Tokens
     const { accessToken, refreshToken, expiresIn } = await authService.generateTokens(
       user,
       req.headers['user-agent'],
       req.ip
     );
 
-    // Invalidiere alten Refresh Token
     await authService.invalidateSession(user.id, validatedData.refreshToken);
 
-    // Sende Response
     return res.json({
       success: true,
       data: {
@@ -255,22 +227,17 @@ export async function refresh(req: Request, res: Response) {
   }
 }
 
-/**
- * User Logout
- */
 export async function logout(req: Request, res: Response) {
   try {
     const refreshToken = req.body.refreshToken;
     const userId = (req.user as any).id;
 
-    // Invalidiere Session
     if (refreshToken) {
       await authService.invalidateSession(userId, refreshToken);
     } else {
       await authService.invalidateSession(userId);
     }
 
-    // Erstelle Audit Log
     await prisma.auditLog.create({
       data: {
         userId,
@@ -298,9 +265,6 @@ export async function logout(req: Request, res: Response) {
   }
 }
 
-/**
- * Get Current User
- */
 export async function me(req: Request, res: Response) {
   try {
     const userId = (req.user as any).id;

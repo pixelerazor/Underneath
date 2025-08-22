@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Crown, Send, Info, Clock, Copy, Check } from 'lucide-react';
+import { invitationService } from '@/services/invitationService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,6 +13,28 @@ export function WelcomeScreen() {
   const [copied, setCopied] = useState(false);
   const user = useAuthStore((state) => state.user);
   const { invitationCode, codeExpiresAt } = useConnectionStore();
+
+  useEffect(() => {
+    const loadActiveInvitation = async () => {
+      try {
+        const invitations = await invitationService.getMyInvitations();
+        const activeInvitation = invitations
+          .filter(inv => inv.isActive && new Date(inv.expiresAt) > new Date())
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+        if (activeInvitation) {
+          useConnectionStore.getState().setInvitationCode(
+            activeInvitation.code,
+            new Date(activeInvitation.expiresAt)
+          );
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Einladungen:', error);
+      }
+    };
+
+    loadActiveInvitation();
+  }, []); // Nur beim Mount laden
 
   const copyCode = async () => {
     if (invitationCode) {
@@ -127,7 +150,7 @@ export function WelcomeScreen() {
                       points: 0,
                       maxPoints: 100,
                     };
-                    useConnectionStore.getState().setConnection(mockSub);
+                    useConnectionStore.getState().setConnection({ sub: mockSub });
                   }}
                 >
                   🛠️ Mock Sub verbinden (Dev)

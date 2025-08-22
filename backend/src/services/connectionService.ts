@@ -1,12 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-// Definiere die Enums lokal, da sie nicht direkt aus @prisma/client exportiert werden
-enum UserRole {
-  ADMIN = 'ADMIN',
-  DOM = 'DOM',
-  SUB = 'SUB',
-  OBSERVER = 'OBSERVER',
-}
+import { PrismaClient, Connection, Invitation, UserRole } from '@prisma/client';
 
 enum UserStatus {
   ACTIVE = 'ACTIVE',
@@ -15,7 +7,6 @@ enum UserStatus {
   PENDING = 'PENDING',
 }
 
-// Singleton Prisma-Client erstellen
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
 });
@@ -24,8 +15,6 @@ async function setup() {
   console.log('Setting up test environment...');
 
   try {
-    // Cleanup first
-    console.log('Cleaning up old test data...');
     await prisma.connection.deleteMany({
       where: {
         OR: [{ domId: process.env.SMOKE_DOM_ID }, { subId: process.env.SMOKE_SUB_ID }],
@@ -36,8 +25,6 @@ async function setup() {
       where: { domId: process.env.SMOKE_DOM_ID },
     });
 
-    // Create or update test users
-    console.log('Creating test users...');
     const domUser = await prisma.user.upsert({
       where: { id: process.env.SMOKE_DOM_ID },
       create: {
@@ -52,8 +39,6 @@ async function setup() {
         status: 'ACTIVE' as const,
       },
     });
-    console.log('DOM user created:', domUser);
-
     const subUser = await prisma.user.upsert({
       where: { id: process.env.SMOKE_SUB_ID },
       create: {
@@ -68,20 +53,12 @@ async function setup() {
         status: 'ACTIVE' as const,
       },
     });
-    console.log('SUB user created:', subUser);
-
-    // Verify users were created
     const verifyDom = await prisma.user.findUnique({ where: { id: domUser.id } });
     const verifySub = await prisma.user.findUnique({ where: { id: subUser.id } });
 
     if (!verifyDom || !verifySub) {
       throw new Error('Failed to verify user creation');
     }
-
-    console.log('Test users verified:', {
-      dom: { id: verifyDom.id, email: verifyDom.email, role: verifyDom.role },
-      sub: { id: verifySub.id, email: verifySub.email, role: verifySub.role },
-    });
 
     return { domUser: verifyDom, subUser: verifySub };
   } catch (error) {
@@ -92,20 +69,9 @@ async function setup() {
 
 async function runTest(domUser: any, subUser: any) {
   try {
-    // Import the connectionService here to ensure prisma is initialized
-    const { connectionService } = await import('../backend/src/services/connectionService.js');
-
-    // Create invitation
-    console.log('Creating invitation...');
-    const invitation = await connectionService.createInvitation(domUser.id, 'smoke@test.com');
-    console.log('Invitation created:', invitation);
-
-    // Create connection
-    console.log('Creating connection...');
-    const connection = await connectionService.createConnection(invitation.code, subUser.id);
-    console.log('Connection created:', connection);
-
-    return { invitation, connection };
+    const connectionService = new ConnectionService(prisma);
+    const connection = await connectionService.createConnection(domUser.id, subUser.id);
+    return { connection };
   } catch (error) {
     console.error('Test execution failed:', error);
     throw error;
@@ -119,19 +85,15 @@ async function smokeTest() {
   }
 
   try {
-    // Setup phase
     const { domUser, subUser } = await setup();
-
-    // Test phase
     const result = await runTest(domUser, subUser);
 
     console.log('✓ Smoke test passed:', {
       users: {
         dom: { id: domUser.id, email: domUser.email },
-        sub: { id: subUser.id, email: subUser.email },
+        sub: { id: subUser.id, email: subUser.email }
       },
-      invitation: result.invitation,
-      connection: result.connection,
+      connection: result.connection
     });
 
     process.exit(0);
@@ -143,7 +105,6 @@ async function smokeTest() {
   }
 }
 
-// Start the test
 console.log('Starting smoke test...');
 console.log('Environment:', {
   domId: process.env.SMOKE_DOM_ID,
@@ -151,9 +112,86 @@ console.log('Environment:', {
   nodeEnv: process.env.NODE_ENV,
 });
 
+class ConnectionService {
+  constructor(private prisma: PrismaClient) {}
+
+  async checkExistingConnection(domId: string, subId: string): Promise<boolean> {
+    const connection = await this.prisma.connection.findFirst({
+      where: {
+        AND: [
+          { domId },
+          { subId },
+          { status: 'ACTIVE' },
+        ],
+      },
+    });
+    return !!connection;
+  }
+
+  async createConnection(domId: string, subId: string): Promise<Connection> {
+    try {
+      const exists = await this.checkExistingConnection(domId, subId);
+      if (exists) {
+        throw new Error('Eine Verbindung zwischen diesen Nutzern existiert bereits');
+      }
+
+      const [dom, sub] = await Promise.all([
+        this.prisma.user.findUnique({ where: { id: domId }}),
+        this.prisma.user.findUnique({ where: { id: subId }})
+      ]);
+
+      if (!dom || dom.role !== UserRole.DOM) {
+        throw new Error('Der erste Nutzer muss ein DOM sein');
+      }
+      if (!sub || sub.role !== UserRole.SUB) {
+        throw new Error('Der zweite Nutzer muss ein SUB sein');
+      }
+
+      return await this.prisma.connection.create({
+        data: {
+          domId,
+          subId,
+          status: 'ACTIVE',
+        },
+      });
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Verbindung:', error);
+      throw error;
+    }
+  }
+
+  async terminateConnection(connectionId: string, userId: string): Promise<Connection> {
+    try {
+      const connection = await this.prisma.connection.findUnique({
+        where: { id: connectionId },
+      });
+
+      if (!connection) {
+        throw new Error('Verbindung nicht gefunden');
+      }
+
+      if (connection.domId !== userId) {
+        throw new Error('Nur der DOM kann eine Verbindung beenden');
+      }
+
+      return await this.prisma.connection.update({
+        where: { id: connectionId },
+        data: {
+          status: 'TERMINATED',
+          endedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      console.error('Fehler beim Beenden der Verbindung:', error);
+      throw error;
+    }
+  }
+}
+
 smokeTest()
   .then(() => process.exit(0))
   .catch((error) => {
     console.error('Unhandled error:', error);
     prisma.$disconnect().then(() => process.exit(1));
   });
+

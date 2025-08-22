@@ -1,77 +1,62 @@
-import { Strategy as LocalStrategy } from 'passport-local';
+import { PassportStatic } from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcryptjs';
-import passport from 'passport';
 import { prisma } from '../lib/prisma';
 
-// Validiere JWT_SECRET
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET must be at least 32 characters long');
+export function configurePassport(passport: PassportStatic) {
+  // JWT Strategy
+  passport.use(
+    new JwtStrategy(
+      {
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        secretOrKey: process.env.JWT_SECRET!,
+      },
+      async (jwt_payload, done) => {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: jwt_payload.userId },
+          });
+
+          if (user) {
+            return done(null, user);
+          }
+          return done(null, false);
+        } catch (error) {
+          return done(error, false);
+        }
+      }
+    )
+  );
+
+  // Local Strategy
+  passport.use(
+    new LocalStrategy(
+      {
+        usernameField: 'email',
+        passwordField: 'password',
+      },
+      async (email, password, done) => {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+          });
+
+          if (!user) {
+            return done(null, false, { message: 'Invalid credentials' });
+          }
+
+          const isMatch = await bcrypt.compare(password, user.passwordHash);
+
+          if (!isMatch) {
+            return done(null, false, { message: 'Invalid credentials' });
+          }
+
+          return done(null, user);
+        } catch (error) {
+          return done(error);
+        }
+      }
+    )
+  );
 }
-
-// Local Strategy für Email/Password Login
-passport.use(
-  new LocalStrategy(
-    {
-      usernameField: 'email',
-      passwordField: 'password',
-    },
-    async (email, password, done) => {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { email: email.toLowerCase() },
-        });
-
-        if (!user) {
-          return done(null, false, { message: 'Incorrect email or password.' });
-        }
-
-        const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-
-        if (!isValidPassword) {
-          return done(null, false, { message: 'Incorrect email or password.' });
-        }
-
-        if (user.status !== 'ACTIVE') {
-          return done(null, false, { message: 'Account is not active.' });
-        }
-
-        return done(null, user);
-      } catch (error) {
-        return done(error);
-      }
-    }
-  )
-);
-
-// JWT Strategy für Token-Validierung
-passport.use(
-  new JwtStrategy(
-    {
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: JWT_SECRET, // Verwende die validierte Variable
-    },
-    async (jwtPayload, done) => {
-      try {
-        const user = await prisma.user.findUnique({
-          where: { id: jwtPayload.sub },
-        });
-
-        if (!user) {
-          return done(null, false);
-        }
-
-        if (user.status !== 'ACTIVE') {
-          return done(null, false);
-        }
-
-        return done(null, user);
-      } catch (error) {
-        return done(error);
-      }
-    }
-  )
-);
-
-export default passport;

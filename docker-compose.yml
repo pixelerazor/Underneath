@@ -1,5 +1,5 @@
 # Docker Compose configuration for Underneath
-# No version field needed for modern Docker Compose
+# Fixed version with correct paths and configurations
 
 services:
   # Frontend Development Server
@@ -20,7 +20,8 @@ services:
       - VITE_APP_NAME=Underneath
     networks:
       - underneath_network
-    command: npm run dev -- --host 0.0.0.0
+    restart: unless-stopped
+    command: npm run dev
 
   # Backend API Server
   backend:
@@ -57,11 +58,12 @@ services:
         condition: service_started
     networks:
       - underneath_network
+    restart: unless-stopped
     command: npm run dev
 
   # PostgreSQL Database
   postgres:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    image: postgres:16-alpine
     container_name: underneath_postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -74,6 +76,7 @@ services:
       - '5432:5432'
     networks:
       - underneath_network
+    restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U underneath_user -d underneath_db']
       interval: 5s
@@ -82,7 +85,7 @@ services:
 
   # Redis Cache
   redis:
-    image: redis:${REDIS_VERSION:-7}-alpine
+    image: redis:7-alpine
     container_name: underneath_redis
     volumes:
       - redis_data:/data
@@ -90,7 +93,8 @@ services:
       - '6379:6379'
     networks:
       - underneath_network
-    command: redis-server --appendonly yes --requirepass underneath_redis_pass
+    restart: unless-stopped
+    command: redis-server --appendonly yes
 
   # Adminer for Database Management
   adminer:
@@ -104,6 +108,7 @@ services:
       - ADMINER_DESIGN=dracula
     depends_on:
       - postgres
+    restart: unless-stopped
 
 volumes:
   postgres_data:

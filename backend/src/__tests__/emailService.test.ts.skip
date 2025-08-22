@@ -1,0 +1,64 @@
+// backend/src/__tests__/emailService.test.ts
+import { EmailService } from '../services/emailService';
+import nodemailer from 'nodemailer';
+
+jest.mock('nodemailer');
+
+describe('EmailService', () => {
+  let emailService: EmailService;
+  const mockTransporter = {
+    verify: jest.fn(),
+    sendMail: jest.fn(),
+  };
+
+  beforeAll(() => {
+    process.env.SMTP_HOST = 'test.smtp.com';
+    process.env.SMTP_PORT = '587';
+    process.env.SMTP_USER = 'test@example.com';
+    process.env.SMTP_PASS = 'test123';
+    
+    (nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransporter);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    emailService = new EmailService();
+  });
+
+  describe('verifyConnection', () => {
+    it('should verify SMTP connection successfully', async () => {
+      mockTransporter.verify.mockResolvedValue(true);
+      await expect(emailService.verifyConnection()).resolves.not.toThrow();
+    });
+
+    it('should handle SMTP connection failure', async () => {
+      mockTransporter.verify.mockRejectedValue(new Error('SMTP error'));
+      await expect(emailService.verifyConnection()).rejects.toThrow('E-Mail-Service nicht verfügbar');
+    });
+  });
+
+  describe('sendInvitationEmail', () => {
+    it('should send invitation email successfully', async () => {
+      mockTransporter.sendMail.mockResolvedValue(true);
+      await expect(
+        emailService.sendInvitationEmail('test@example.com', 'CODE123', 'TestDom')
+      ).resolves.not.toThrow();
+
+      expect(mockTransporter.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'test@example.com',
+          subject: expect.stringContaining('TestDom'),
+          html: expect.stringContaining('CODE123'),
+          text: expect.stringContaining('CODE123'),
+        })
+      );
+    });
+
+    it('should handle email sending failure', async () => {
+      mockTransporter.sendMail.mockRejectedValue(new Error('Send failed'));
+      await expect(
+        emailService.sendInvitationEmail('test@example.com', 'CODE123', 'TestDom')
+      ).rejects.toThrow('E-Mail konnte nicht gesendet werden');
+    });
+  });
+});

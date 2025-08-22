@@ -82,7 +82,7 @@ export function DomLayout() {
   }
 
   const handleSectionChange = (section: string) => {
-    const config = TAB_CONFIGS[section];
+    const config = TAB_CONFIGS[section as keyof typeof TAB_CONFIGS];
     if (config && config.tabs.length > 0) {
       navigate(config.tabs[0].path);
     }

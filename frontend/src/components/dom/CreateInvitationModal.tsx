@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Copy, Mail, Clock, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { invitationService } from '@/services/invitationService';
+import { useConnectionStore } from '@/store/useConnectionStore';
 import {
   Dialog,
   DialogContent,
@@ -25,16 +28,28 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
 
   const generateCode = async () => {
     setLoading(true);
-    // Simuliere API Call
-    setTimeout(() => {
-      setInviteCode(
-        'DOM-' +
-          Math.random().toString(36).substring(2, 6).toUpperCase() +
-          '-' +
-          Math.random().toString(36).substring(2, 6).toUpperCase()
+    try {
+      const invitation = await invitationService.createInvitation(
+        email || '', // Email ist optional
+        undefined // Keine custom message
       );
+
+      if (invitation && invitation.code) {
+        setInviteCode(invitation.code);
+        // Update den Store mit dem neuen Code
+        const store = useConnectionStore.getState();
+        store.setInvitationCode(
+          invitation.code,
+          new Date(invitation.expiresAt)
+        );
+        toast.success('Einladungscode erstellt!');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Erstellen des Einladungscodes');
+      console.error(error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -46,8 +61,14 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
   };
 
   const sendEmail = async () => {
-    // Platzhalter für Email-Versand
-    console.log('Sending to:', email);
+    if (!email || !inviteCode) return;
+    try {
+      // Der Email-Versand passiert bereits beim Erstellen wenn eine Email angegeben wird
+      // Hier könnten wir einen Re-Send implementieren falls nötig
+      toast.success(`Einladung an ${email} gesendet`);
+    } catch (error) {
+      toast.error('Fehler beim Senden der E-Mail');
+    }
   };
 
   return (

@@ -1,0 +1,156 @@
+// backend/src/__tests__/invitation.test.ts
+import { PrismaClient } from '@prisma/client';
+import { emailService } from '../services/emailService';
+import { InvitationController } from '../controllers/invitationController';
+import { createTestClient } from './testUtils';
+
+// Mock Prisma
+const prisma = new PrismaClient();
+
+// Mock Email Service
+jest.mock('../services/emailService', () => ({
+  emailService: {
+    sendInvitationEmail: jest.fn(),
+  },
+}));
+
+describe('Invitation Flow', () => {
+  let testDom: any;
+  let testSub: any;
+  let invitationCode: string;
+
+  beforeAll(async () => {
+    // Setup Test Users
+    testDom = await prisma.user.create({
+      data: {
+        email: 'test.dom@example.com',
+        passwordHash: 'dummy_hash',
+        role: 'DOM',
+        status: 'ACTIVE',
+      },
+    });
+
+    testSub = await prisma.user.create({
+      data: {
+        email: 'test.sub@example.com',
+        passwordHash: 'dummy_hash',
+        role: 'SUB',
+        status: 'ACTIVE',
+      },
+    });
+  });
+
+  afterAll(async () => {
+    // Cleanup
+    await prisma.connection.deleteMany({
+      where: {
+        OR: [{ domId: testDom.id }, { subId: testSub.id }],
+      },
+    });
+    await prisma.invitation.deleteMany({
+      where: { domId: testDom.id },
+    });
+    await prisma.user.deleteMany({
+      where: { id: { in: [testDom.id, testSub.id] } },
+    });
+    await prisma.$disconnect();
+  });
+
+  describe('Create Invitation', () => {
+    it('should create invitation successfully', async () => {
+      const client = createTestClient();
+      const response = await client
+        .post('/api/invitations/create')
+        .set('Authorization', `Bearer ${testDom.token}`)
+        .send({
+          email: 'test.sub@example.com',
+          message: 'Test invitation',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty('invitationId');
+      invitationCode = response.body.code;
+
+      expect(emailService.sendInvitationEmail).toHaveBeenCalledWith(
+        'test.sub@example.com',
+        expect.any(String),
+        expect.any(String)
+      );
+    });
+
+    it('should prevent duplicate invitations', async () => {
+      const client = createTestClient();
+      const response = await client
+        .post('/api/invitations/create')
+        .set('Authorization', `Bearer ${testDom.token}`)
+        .send({
+          email: 'test.sub@example.com',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/bereits eine aktive Einladung/);
+    });
+  });
+
+  describe('Validate Invitation', () => {
+    it('should validate invitation code successfully', async () => {
+      const client = createTestClient();
+      const response = await client
+        .post('/api/invitations/validate')
+        .send({ code: invitationCode });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('valid', true);
+    });
+
+    it('should reject invalid codes', async () => {
+      const client = createTestClient();
+      const response = await client
+        .post('/api/invitations/validate')
+        .send({ code: 'INVALID' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/Ungültiger Einladungscode/);
+    });
+  });
+
+  describe('Accept Invitation', () => {
+    it('should accept invitation successfully', async () => {
+      const client = createTestClient();
+      const response = await client
+        .post('/api/invitations/accept')
+        .set('Authorization', `Bearer ${testSub.token}`)
+        .send({ code: invitationCode });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('connectionId');
+    });
+
+    it('should prevent duplicate connections', async () => {
+      const client = createTestClient();
+      const response = await client
+        .post('/api/invitations/accept')
+        .set('Authorization', `Bearer ${testSub.token}`)
+        .send({ code: invitationCode });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toMatch(/bereits eine Verbindung/);
+    });
+  });
+
+  describe('Rate Limiting', () => {
+    it('should enforce rate limits on create', async () => {
+      const client = createTestClient();
+      const requests = Array(6).fill(null).map(() => 
+        client
+          .post('/api/invitations/create')
+          .set('Authorization', `Bearer ${testDom.token}`)
+          .send({ email: 'test@example.com' })
+      );
+
+      const responses = await Promise.all(requests);
+      const tooManyRequests = responses.filter(r => r.status === 429);
+      expect(tooManyRequests.length).toBeGreaterThan(0);
+    });
+  });
+});
