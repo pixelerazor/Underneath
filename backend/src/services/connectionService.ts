@@ -1,4 +1,4 @@
-import { PrismaClient, Connection, Invitation, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 enum UserStatus {
   ACTIVE = 'ACTIVE',

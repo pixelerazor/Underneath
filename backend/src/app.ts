@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { rateLimit } from 'express-rate-limit';
-import { auth } from './middleware/auth';
+import { authenticateToken } from './middleware/auth';
 import invitationRoutes from './routes/invitationRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
@@ -32,7 +32,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api/invitations', auth, invitationRoutes);
+app.use('/api/invitations', authenticateToken, invitationRoutes);
 
 // Error Handling
 app.use(errorHandler);

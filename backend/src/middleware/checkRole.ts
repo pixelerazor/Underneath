@@ -1,7 +1,8 @@
 // backend/src/middleware/checkRole.ts
 import { Request, Response, NextFunction } from 'express';
-import { UserRole } from '@prisma/client';
 import { CustomError } from '../utils/errors';
+
+type UserRole = 'DOM' | 'SUB' | 'OBSERVER' | 'ADMIN';
 
 export const checkRole = (allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
