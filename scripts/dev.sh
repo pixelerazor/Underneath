@@ -26,7 +26,7 @@ sleep 5
 
 # Run Prisma migrations
 echo "Running database migrations..."
-docker compose exec backend npx prisma migrate dev --name init || true
+docker compose exec backend npx prisma migrate dev --schema /app/prisma/schema.prisma --name init || true
 
 # Show logs
 echo "Services started! Showing logs..."

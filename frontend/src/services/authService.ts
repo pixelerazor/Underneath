@@ -44,29 +44,46 @@ api.interceptors.response.use(
   }
 );
 
-interface AuthResponse {
-  success: boolean;
-  data: {
-    user: any;
-    accessToken: string;
-    refreshToken: string;
+// WICHTIG: Backend sendet direkt { user, accessToken, refreshToken }
+// NICHT { success: true, data: { ... } }
+interface BackendAuthResponse {
+  user: {
+    id: string;
+    email: string;
+    role: string;
   };
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface BackendErrorResponse {
+  error?: string;
+  errors?: Array<{ field: string; message: string }>;
 }
 
 export const register = async (email: string, password: string, role: string) => {
   try {
-    const response = await api.post<AuthResponse>('/auth/register', {
+    const response = await api.post<BackendAuthResponse>('/auth/register', {
       email,
       password,
-      role,
+      confirmPassword: password, // WICHTIG: Backend erwartet confirmPassword!
+      role: role.toUpperCase(), // Sicherstellen dass role uppercase ist
     });
     
-    const { user, accessToken, refreshToken } = response.data.data;
+    // Response ist direkt in response.data, NICHT response.data.data!
+    const { user, accessToken, refreshToken } = response.data;
     useAuthStore.getState().login(user, accessToken, refreshToken);
-    return response.data.data;
+    return response.data;
   } catch (error) {
     if (error instanceof AxiosError) {
-      throw new Error(error.response?.data?.error || 'Registration failed');
+      const errorData = error.response?.data as BackendErrorResponse;
+      
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        const messages = errorData.errors.map(e => e.message).join(', ');
+        throw new Error(messages);
+      }
+      
+      throw new Error(errorData?.error || 'Registration failed');
     }
     throw error;
   }
@@ -74,17 +91,19 @@ export const register = async (email: string, password: string, role: string) =>
 
 export const login = async (email: string, password: string) => {
   try {
-    const response = await api.post<AuthResponse>('/auth/login', {
+    const response = await api.post<BackendAuthResponse>('/auth/login', {
       email,
       password,
     });
     
-    const { user, accessToken, refreshToken } = response.data.data;
+    // Response ist direkt in response.data, NICHT response.data.data!
+    const { user, accessToken, refreshToken } = response.data;
     useAuthStore.getState().login(user, accessToken, refreshToken);
-    return response.data.data;
+    return response.data;
   } catch (error) {
     if (error instanceof AxiosError) {
-      throw new Error(error.response?.data?.error || 'Login failed');
+      const errorData = error.response?.data as BackendErrorResponse;
+      throw new Error(errorData?.error || 'Login failed');
     }
     throw error;
   }
@@ -93,32 +112,42 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   try {
     const { refreshToken } = useAuthStore.getState();
-    await api.post('/auth/logout', { refreshToken });
-    useAuthStore.getState().logout();
+    if (refreshToken) {
+      await api.post('/auth/logout', { refreshToken });
+    }
   } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
     useAuthStore.getState().logout();
-    throw error;
   }
 };
 
 export const refreshAccessToken = async (): Promise<string> => {
   try {
     const { refreshToken } = useAuthStore.getState();
-    const response = await api.post<{ success: boolean; data: { accessToken: string; refreshToken: string } }>('/auth/refresh', {
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    
+    const response = await api.post<{ accessToken: string }>('/auth/refresh', {
       refreshToken,
     });
     
-    const { accessToken } = response.data.data;
-    useAuthStore.getState().login(
-      useAuthStore.getState().user!,
-      accessToken,
-      refreshToken!
-    );
+    // Backend sendet nur { accessToken: "..." }
+    const { accessToken } = response.data;
+    
+    const currentUser = useAuthStore.getState().user;
+    const currentRefreshToken = useAuthStore.getState().refreshToken;
+    
+    if (currentUser && currentRefreshToken) {
+      useAuthStore.getState().login(currentUser, accessToken, currentRefreshToken);
+    }
     
     return accessToken;
   } catch (error) {
     if (error instanceof AxiosError) {
-      throw new Error(error.response?.data?.error || 'Token refresh failed');
+      const errorData = error.response?.data as BackendErrorResponse;
+      throw new Error(errorData?.error || 'Token refresh failed');
     }
     throw error;
   }
@@ -126,11 +155,12 @@ export const refreshAccessToken = async (): Promise<string> => {
 
 export const getCurrentUser = async () => {
   try {
-    const response = await api.get('/auth/me');
-    return response.data.data;
+    const response = await api.get<{ user: any }>('/auth/me');
+    return response.data.user;
   } catch (error) {
     if (error instanceof AxiosError) {
-      throw new Error(error.response?.data?.error || 'Failed to fetch user data');
+      const errorData = error.response?.data as BackendErrorResponse;
+      throw new Error(errorData?.error || 'Failed to fetch user data');
     }
     throw error;
   }
