@@ -23,6 +23,7 @@ import { nanoid } from 'nanoid';
 import * as emailService from '../services/emailService';
 import { logger } from '../utils/logger';
 import { CustomError } from '../utils/errors';
+import { ConnectionManagementService } from '../services/connectionManagementService';
 import {
   CreateInvitationInput,
   ValidateInvitationInput,
@@ -59,6 +60,15 @@ export class InvitationController {
     const domId = req.user!.userId; // Set by authentication middleware
 
     try {
+      // First check: Can this DOM create a connection? (1:1 constraint)
+      const canCreateConnection = await ConnectionManagementService.canCreateConnection(domId, 'DOM');
+      if (!canCreateConnection) {
+        throw new CustomError(
+          'DOM_ALREADY_CONNECTED',
+          'Sie haben bereits eine aktive Verbindung. Sie können nur mit einem SUB gleichzeitig verbunden sein.'
+        );
+      }
+
       // Generate unique 8-digit alphanumeric code (uppercase)
       const code = nanoid(8).toUpperCase();
 
@@ -233,8 +243,25 @@ export class InvitationController {
           throw new CustomError('EXPIRED', 'Dieser Einladungscode ist abgelaufen');
         }
 
-        // Prüfe ob bereits eine Verbindung existiert
-        // Aktualisiere Einladungsstatus
+        // Check if this SUB can create a connection (1:1 constraint)
+        const canSubConnect = await ConnectionManagementService.canCreateConnection(subId, 'SUB');
+        if (!canSubConnect) {
+          throw new CustomError(
+            'SUB_ALREADY_CONNECTED',
+            'Sie haben bereits eine aktive Verbindung. Sie können nur mit einem DOM gleichzeitig verbunden sein.'
+          );
+        }
+
+        // Check if the DOM still can create a connection (might have connected since invitation was sent)
+        const canDomConnect = await ConnectionManagementService.canCreateConnection(invitation.domId, 'DOM');
+        if (!canDomConnect) {
+          throw new CustomError(
+            'DOM_ALREADY_CONNECTED',
+            'Der DOM hat bereits eine andere Verbindung. Diese Einladung ist nicht mehr gültig.'
+          );
+        }
+
+        // Update invitation status
         const updatedInvitation = await tx.invitation.update({
           where: { id: invitation.id },
           data: {
@@ -243,23 +270,49 @@ export class InvitationController {
           },
         });
 
-        // TODO: Create connection between DOM and SUB
-        // This will be implemented when connection service is ready
-
+        // Create the connection outside of this transaction to avoid deadlocks
         return { invitation: updatedInvitation };
       });
 
-      logger.info(
-        `Einladung ${result.invitation.id} erfolgreich angenommen`
-      );
-      res.json({
-        message: 'Einladung erfolgreich angenommen',
-        invitation: {
-          id: result.invitation.id,
-          status: result.invitation.status,
-          acceptedAt: result.invitation.acceptedAt,
-        },
-      });
+      // Now create the actual connection between DOM and SUB
+      try {
+        const connection = await ConnectionManagementService.createConnection(
+          result.invitation.domId,
+          subId
+        );
+
+        logger.info(
+          `Einladung ${result.invitation.id} erfolgreich angenommen und Verbindung ${connection.id} erstellt`
+        );
+
+        res.json({
+          message: 'Einladung erfolgreich angenommen und Verbindung hergestellt',
+          invitation: {
+            id: result.invitation.id,
+            status: result.invitation.status,
+            acceptedAt: result.invitation.acceptedAt,
+          },
+          connection: {
+            id: connection.id,
+            domId: connection.domId,
+            subId: connection.subId,
+            status: connection.status,
+            createdAt: connection.createdAt,
+          },
+        });
+      } catch (connectionError) {
+        // If connection creation fails, we should rollback the invitation
+        await prisma.invitation.update({
+          where: { id: result.invitation.id },
+          data: { status: 'PENDING' },
+        });
+        
+        logger.error('Failed to create connection after accepting invitation:', connectionError);
+        throw new CustomError(
+          'CONNECTION_CREATION_FAILED',
+          'Einladung wurde angenommen, aber Verbindung konnte nicht hergestellt werden'
+        );
+      }
     } catch (error) {
       logger.error('Fehler beim Annehmen der Einladung:', error);
       if (error instanceof CustomError) {
