@@ -13,10 +13,15 @@ model User {
   password            String
   role                String
   displayName         String?
+  profileCompleted    Boolean      @default(false)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
   sentInvitations     Invitation[] @relation("InvitationSender")
   sessions            Session[]
+  profile             UserProfile?
+  // 1:1 Connection relationships
+  domConnection       Connection?  @relation("DomConnection")
+  subConnection       Connection?  @relation("SubConnection")
 }
 
 model Session {
@@ -40,4 +45,43 @@ model Invitation {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   dom        User      @relation("InvitationSender", fields: [domId], references: [id])
+}
+
+model Connection {
+  id        String   @id @default(uuid())
+  domId     String   @unique // Ensures 1:1 - one DOM can only have one connection
+  subId     String   @unique // Ensures 1:1 - one SUB can only have one connection  
+  status    String   @default("ACTIVE") // ACTIVE, TERMINATED, SUSPENDED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Relationships
+  dom       User     @relation("DomConnection", fields: [domId], references: [id], onDelete: Cascade)
+  sub       User     @relation("SubConnection", fields: [subId], references: [id], onDelete: Cascade)
+  
+  @@index([domId])
+  @@index([subId])
+  @@index([status])
+}
+
+model UserProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  // Basic Information
+  preferredName   String?
+  experienceLevel String?  // BEGINNER, EXPERIENCED, EXPERT
+  availability    Json?    // Flexible JSON for complex availability data
+  timezone        String?
+  // Role-specific preferences (stored as JSON for flexibility)
+  preferences     Json?    // Role-specific settings
+  goals           String?  // Text field for personal goals
+  boundaries      Json?    // Limits and boundaries
+  communication   Json?    // Communication preferences
+  // Metadata
+  completedSteps  String[] // Track which onboarding steps are done
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
 }

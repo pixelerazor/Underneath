@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/authRoutes';
 import invitationRoutes from './routes/invitationRoutes';
 import connectionRoutes from './routes/connectionRoutes';
+import { profileRoutes } from './routes/profile';
 
 // Import middleware for protected routes
 import { authenticateToken } from './middleware/auth';
@@ -60,6 +61,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/invitations', authenticateToken, invitationRoutes);
 app.use('/api/connections', authenticateToken, connectionRoutes);
+app.use('/api/profile', profileRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

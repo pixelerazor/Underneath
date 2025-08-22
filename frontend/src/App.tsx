@@ -8,6 +8,7 @@ import { SubLayout } from './layouts/SubLayout';
 import { JoinWithCode } from './components/sub/JoinWithCode';
 import PlaceholderPage from './components/common/PlaceholderPage';
 import UserProfile from './components/profile/UserProfile';
+import ProfileCompletionWizard from './components/onboarding/ProfileCompletionWizard';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,11 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 
 function DashboardRouter() {
   const user = useAuthStore((state) => state.user);
+
+  // Check if user needs to complete profile
+  if (user && !user.profileCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
 
   if (user?.role === 'DOM') {
     return <DomLayout />;
@@ -178,6 +184,16 @@ export default function App() {
           element={
             <ProtectedRoute>
               <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Profile completion wizard */}
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <ProfileCompletionWizard />
             </ProtectedRoute>
           }
         />

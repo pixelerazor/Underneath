@@ -13,6 +13,7 @@ interface User {
   avatarUrl?: string
   bio?: string
   createdAt?: string
+  profileCompleted?: boolean
 }
 
 interface AuthState {
