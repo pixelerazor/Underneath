@@ -89,7 +89,7 @@ export class ProfileService {
             email: user.email,
             role: user.role,
             displayName: user.displayName,
-            profileCompleted: user.profileCompleted,
+            profileCompleted: user.profileCompleted || false,
           },
           profile: this.getEmptyProfileTemplate(user.role),
           isNewProfile: true,

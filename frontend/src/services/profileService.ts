@@ -8,9 +8,32 @@
  * @version 1.0.0
  */
 
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '../store/useAuthStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Create configured axios instance with auth interceptor
+const api = axios.create({
+  baseURL: `${API_BASE_URL}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const { accessToken } = useAuthStore.getState();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export interface ProfileData {
   preferredName?: string;
@@ -77,7 +100,7 @@ export class ProfileService {
    * Get current user's profile
    */
   static async getProfile(): Promise<ProfileResponse> {
-    const response = await axios.get(`${API_BASE_URL}/api/profile`);
+    const response = await api.get('/profile');
     return response.data.data;
   }
 
@@ -89,7 +112,7 @@ export class ProfileService {
     isComplete: boolean;
     nextSteps: string[];
   }> {
-    const response = await axios.put(`${API_BASE_URL}/api/profile`, profileData);
+    const response = await api.put('/profile', profileData);
     return response.data.data;
   }
 
@@ -97,7 +120,7 @@ export class ProfileService {
    * Get profile completion progress
    */
   static async getProgress(): Promise<ProfileProgress> {
-    const response = await axios.get(`${API_BASE_URL}/api/profile/progress`);
+    const response = await api.get('/profile/progress');
     return response.data.data;
   }
 
@@ -105,7 +128,7 @@ export class ProfileService {
    * Mark profile as completed (if requirements are met)
    */
   static async completeProfile(): Promise<{ isComplete: boolean }> {
-    const response = await axios.post(`${API_BASE_URL}/api/profile/complete`);
+    const response = await api.post('/profile/complete');
     return response.data.data;
   }
 
@@ -113,7 +136,7 @@ export class ProfileService {
    * Get profile template for role
    */
   static async getTemplate(role: string): Promise<any> {
-    const response = await axios.get(`${API_BASE_URL}/api/profile/template/${role}`);
+    const response = await api.get(`/profile/template/${role}`);
     return response.data.data;
   }
 

@@ -45,7 +45,7 @@ export default function ProfileCompletionWizard() {
   const [profileData, setProfileData] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [, setProfileResponse] = useState<ProfileResponse | null>(null);
+  const [profileResponse, setProfileResponse] = useState<ProfileResponse | null>(null);
   
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -96,10 +96,14 @@ export default function ProfileCompletionWizard() {
   const progress = steps.length > 0 ? ((currentStep + 1) / steps.length) * 100 : 0;
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    if (user && !profileResponse) {
+      loadProfile();
+    }
+  }, [user]); // Only depend on user
 
   const loadProfile = async () => {
+    if (initialLoading) return; // Prevent double loading
+    
     setInitialLoading(true);
     try {
       const response = await ProfileService.getProfile();
@@ -128,6 +132,12 @@ export default function ProfileCompletionWizard() {
       console.error('Error loading profile:', error);
       const errorMessage = ProfileService.getErrorMessage(error);
       toast.error(`Fehler beim Laden des Profils: ${errorMessage}`);
+      
+      // If auth error, redirect to login
+      if (error.response?.status === 401) {
+        navigate('/login');
+        return;
+      }
     } finally {
       setInitialLoading(false);
     }
@@ -326,7 +336,13 @@ export default function ProfileCompletionWizard() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => navigate('/dashboard/overview')}
+              onClick={() => {
+                // Save current progress and allow access to dashboard
+                const dashboardPath = user?.role === 'DOM' ? '/dashboard/overview?skip_onboarding=true' : 
+                                      user?.role === 'SUB' ? '/sub/dashboard?skip_onboarding=true' : 
+                                      '/dashboard/overview?skip_onboarding=true';
+                navigate(dashboardPath);
+              }}
             >
               Später vervollständigen
             </Button>

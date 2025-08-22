@@ -18,9 +18,11 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
 
 function DashboardRouter() {
   const user = useAuthStore((state) => state.user);
+  const searchParams = new URLSearchParams(window.location.search);
+  const skipOnboarding = searchParams.get('skip_onboarding') === 'true';
 
-  // Check if user needs to complete profile
-  if (user && !user.profileCompleted) {
+  // Check if user needs to complete profile (unless explicitly skipping)
+  if (user && !user.profileCompleted && !skipOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -39,7 +41,7 @@ export default function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         {/* Root redirect */}
         <Route
