@@ -2,30 +2,34 @@
 import { z } from 'zod';
 
 export const createInvitationSchema = z.object({
-  email: z
-    .string()
-    .email('Ungültige E-Mail-Adresse')
-    .min(5, 'E-Mail-Adresse zu kurz')
-    .max(255, 'E-Mail-Adresse zu lang'),
-  message: z
-    .string()
-    .max(500, 'Nachricht darf maximal 500 Zeichen lang sein')
-    .optional(),
+  body: z.object({
+    email: z
+      .string()
+      .transform((email) => email.trim() === '' ? `sub.${Date.now()}@invitation.local` : email)
+      .pipe(z.string().email('Ungültige E-Mail-Adresse')),
+    message: z
+      .string()
+      .max(500, 'Nachricht darf maximal 500 Zeichen lang sein')
+      .optional(),
+  }),
 });
 
 export const validateInvitationSchema = z.object({
-  code: z
-    .string()
-    .length(8, 'Einladungscode muss genau 8 Zeichen lang sein')
-    .regex(/^[A-Z0-9]+$/, 'Code darf nur Großbuchstaben und Zahlen enthalten'),
+  body: z.object({
+    code: z
+      .string()
+      .length(8, 'Einladungscode muss genau 8 Zeichen lang sein')
+      .regex(/^[A-Z0-9]+$/, 'Code darf nur Großbuchstaben und Zahlen enthalten'),
+  }),
 });
 
 export const acceptInvitationSchema = z.object({
-  code: z
-    .string()
-    .length(8, 'Einladungscode muss genau 8 Zeichen lang sein')
-    .regex(/^[A-Z0-9]+$/, 'Code darf nur Großbuchstaben und Zahlen enthalten'),
-  userId: z.string().uuid('Ungültige User ID'),
+  body: z.object({
+    code: z
+      .string()
+      .length(8, 'Einladungscode muss genau 8 Zeichen lang sein')
+      .regex(/^[A-Z0-9]+$/, 'Code darf nur Großbuchstaben und Zahlen enthalten'),
+  }),
 });
 
 export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;

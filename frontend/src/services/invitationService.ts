@@ -9,6 +9,7 @@ export interface Invitation {
   expiresAt: Date;
   isActive: boolean;
   createdAt: Date;
+  emailSent?: boolean; // Optional field für E-Mail Status
 }
 
 export interface Connection {

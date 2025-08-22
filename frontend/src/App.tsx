@@ -5,6 +5,7 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { DomLayout } from './layouts/DomLayout';
 import { SubLayout } from './layouts/SubLayout';
+import { JoinWithCode } from './components/sub/JoinWithCode';
 import PlaceholderPage from './components/common/PlaceholderPage';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -57,6 +58,14 @@ export default function App() {
               <AuthLayout>
                 <RegisterForm />
               </AuthLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join"
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <JoinWithCode />
             </ProtectedRoute>
           }
         />

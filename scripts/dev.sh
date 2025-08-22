@@ -41,6 +41,7 @@ else
     echo "🔧 Backend:  http://localhost:3000"
     echo "🗄️  Database: http://localhost:8080 (Adminer)"
     echo "📊 Prisma Studio: http://localhost:5555"
+    echo "📧 Mailpit (E-Mails): http://localhost:8025"
 fi
 echo ""
 docker compose logs -f

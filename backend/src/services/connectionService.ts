@@ -105,12 +105,13 @@ async function smokeTest() {
   }
 }
 
-console.log('Starting smoke test...');
-console.log('Environment:', {
-  domId: process.env.SMOKE_DOM_ID,
-  subId: process.env.SMOKE_SUB_ID,
-  nodeEnv: process.env.NODE_ENV,
-});
+// Smoke test logs auskommentiert
+// console.log('Starting smoke test...');
+// console.log('Environment:', {
+//   domId: process.env.SMOKE_DOM_ID,
+//   subId: process.env.SMOKE_SUB_ID,
+//   nodeEnv: process.env.NODE_ENV,
+// });
 
 class ConnectionService {
   constructor(private prisma: PrismaClient) {}
@@ -188,10 +189,11 @@ class ConnectionService {
   }
 }
 
-smokeTest()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error('Unhandled error:', error);
-    prisma.$disconnect().then(() => process.exit(1));
-  });
+// Smoke test auskommentiert - wird nur manuell ausgeführt
+// smokeTest()
+//   .then(() => process.exit(0))
+//   .catch((error) => {
+//     console.error('Unhandled error:', error);
+//     prisma.$disconnect().then(() => process.exit(1));
+//   });
 

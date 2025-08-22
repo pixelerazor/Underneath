@@ -6,6 +6,10 @@ import { PrismaClient } from '@prisma/client';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
+import invitationRoutes from './routes/invitationRoutes';
+
+// Import middleware for invitation routes
+import { authenticateToken } from './middleware/auth';
 
 // Load environment variables
 dotenv.config();
@@ -53,6 +57,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/invitations', authenticateToken, invitationRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

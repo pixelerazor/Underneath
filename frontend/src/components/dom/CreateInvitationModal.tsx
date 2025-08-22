@@ -30,7 +30,7 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
     setLoading(true);
     try {
       const invitation = await invitationService.createInvitation(
-        email || '', // Email ist optional
+        email.trim() || '', // Email wird beim Erstellen berücksichtigt
         undefined // Keine custom message
       );
 
@@ -42,7 +42,23 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
           invitation.code,
           new Date(invitation.expiresAt)
         );
-        toast.success('Einladungscode erstellt!');
+        
+        // Erfolgs-Message abhängig davon, ob E-Mail erfolgreich versendet wurde
+        if (email.trim()) {
+          if (invitation.emailSent) {
+            toast.success('Einladungscode erstellt und E-Mail versendet!', {
+              description: `Einladung wurde erfolgreich an ${email} gesendet.`
+            });
+          } else {
+            toast.warning('Einladungscode erstellt, E-Mail-Versand fehlgeschlagen', {
+              description: `Code: ${invitation.code}. Bitte teile ihn manuell mit deinem Sub.`
+            });
+          }
+        } else {
+          toast.success('Einladungscode erstellt!', {
+            description: 'Teile den Code manuell mit deinem Sub.'
+          });
+        }
       }
     } catch (error) {
       toast.error('Fehler beim Erstellen des Einladungscodes');
@@ -60,16 +76,6 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
     }
   };
 
-  const sendEmail = async () => {
-    if (!email || !inviteCode) return;
-    try {
-      // Der Email-Versand passiert bereits beim Erstellen wenn eine Email angegeben wird
-      // Hier könnten wir einen Re-Send implementieren falls nötig
-      toast.success(`Einladung an ${email} gesendet`);
-    } catch (error) {
-      toast.error('Fehler beim Senden der E-Mail');
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -82,9 +88,26 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
         </DialogHeader>
         <div className="space-y-4">
           {!inviteCode ? (
-            <Button onClick={generateCode} className="w-full" disabled={loading}>
-              {loading ? 'Generiere...' : 'Code generieren'}
-            </Button>
+            <>
+              {/* Email Input BEFORE generating code */}
+              <div className="space-y-2">
+                <Label htmlFor="email-input">E-Mail des Subs (optional):</Label>
+                <Input
+                  id="email-input"
+                  type="email"
+                  placeholder="sub@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Wenn angegeben, wird der Code automatisch per E-Mail versendet.
+                </p>
+              </div>
+              
+              <Button onClick={generateCode} className="w-full" disabled={loading}>
+                {loading ? 'Generiere...' : email.trim() ? 'Code generieren & E-Mail senden' : 'Code generieren'}
+              </Button>
+            </>
           ) : (
             <>
               {/* Generated Code Display */}
@@ -102,28 +125,14 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
                 </div>
               </div>
 
-              {/* Email Option */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Per E-Mail versenden (optional):</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="sub@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="outline"
-                    onClick={sendEmail}
-                    disabled={!email}
-                  >
-                    <Mail className="h-4 w-4" />
-                  </Button>
+              {/* Info about email sending */}
+              {email && (
+                <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    📧 E-Mail wurde an <strong>{email}</strong> gesendet
+                  </p>
                 </div>
-              </div>
+              )}
 
               {/* Info Alert */}
               <Alert>

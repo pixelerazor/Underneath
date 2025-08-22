@@ -110,6 +110,20 @@ services:
       - postgres
     restart: unless-stopped
 
+  # Mailpit - Local SMTP Server for Development
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: underneath_mailpit
+    ports:
+      - '1025:1025'   # SMTP port
+      - '8025:8025'   # Web UI port
+    networks:
+      - underneath_network
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
 volumes:
   postgres_data:
   redis_data:

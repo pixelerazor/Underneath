@@ -15,15 +15,15 @@ import {
 const prisma = new PrismaClient();
 
 export class InvitationController {
-  static async create(req: Request<{}, {}, CreateInvitationInput>, res: Response) {
+  static async create(req: Request<{}, {}, CreateInvitationInput['body']>, res: Response) {
     const { email, message } = req.body;
-    const domId = req.user!.id; // Von Auth Middleware gesetzt
+    const domId = req.user!.userId; // Von Auth Middleware gesetzt
 
     try {
       // Generiere einzigartigen 8-stelligen Code
       const code = nanoid(8).toUpperCase();
 
-      // Erstelle Einladung in Transaktion
+      // Erstelle Einladung in Transaktion (ohne E-Mail-Versand)
       const invitation = await prisma.$transaction(async (tx) => {
         // Prüfe ob bereits eine aktive Einladung existiert
         const existingInvitation = await tx.invitation.findFirst({
@@ -50,29 +50,38 @@ export class InvitationController {
             email,
             expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48h gültig
           },
-          include: {
-            dom: {
-              select: {
-                displayName: true,
-              },
-            },
-          },
         });
-
-        // Sende Einladungs-E-Mail
-        await emailService.sendInvitationEmail(
-          email,
-          code,
-          invitation.dom.displayName || 'Ein DOM'
-        );
 
         return invitation;
       });
 
+      // Versuche E-Mail zu senden (außerhalb der Transaktion)
+      let emailSent = false;
+      if (email && !email.includes('@invitation.local')) {
+        try {
+          await emailService.sendInvitationEmail(
+            email,
+            code,
+            'DOM' // Vereinfacht, da displayName nicht verfügbar ist
+          );
+          emailSent = true;
+          logger.info(`E-Mail erfolgreich gesendet an ${email}`);
+        } catch (emailError) {
+          // E-Mail-Fehler wird geloggt, aber die Einladung bleibt bestehen
+          logger.error(`E-Mail-Versand fehlgeschlagen an ${email}:`, emailError);
+          emailSent = false;
+        }
+      }
+
       logger.info(`Einladung erstellt: ${invitation.id} für ${email}`);
       res.status(201).json({
-        message: 'Einladung erfolgreich erstellt und versendet',
-        invitationId: invitation.id,
+        id: invitation.id,
+        code: invitation.code,
+        email: invitation.email,
+        expiresAt: invitation.expiresAt,
+        isActive: true,
+        createdAt: invitation.createdAt,
+        emailSent: emailSent, // Information ob E-Mail versendet wurde
       });
     } catch (error) {
       logger.error('Fehler beim Erstellen der Einladung:', error);
@@ -85,7 +94,7 @@ export class InvitationController {
   }
 
   static async validate(
-    req: Request<{}, {}, ValidateInvitationInput>,
+    req: Request<{}, {}, ValidateInvitationInput['body']>,
     res: Response
   ) {
     const { code } = req.body;
@@ -134,11 +143,11 @@ export class InvitationController {
   }
 
   static async accept(
-    req: Request<{}, {}, AcceptInvitationInput>,
+    req: Request<{}, {}, AcceptInvitationInput['body']>,
     res: Response
   ) {
     const { code } = req.body;
-    const subId = req.user!.id; // Von Auth Middleware gesetzt
+    const subId = req.user!.userId; // Von Auth Middleware gesetzt
 
     try {
       // Führe alle Operationen in einer Transaktion aus
@@ -219,7 +228,7 @@ export class InvitationController {
   }
 
   static async listMyInvitations(req: Request, res: Response) {
-    const domId = req.user!.id;
+    const domId = req.user!.userId;
 
     try {
       const invitations = await prisma.invitation.findMany({
