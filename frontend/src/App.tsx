@@ -7,6 +7,7 @@ import { DomLayout } from './layouts/DomLayout';
 import { SubLayout } from './layouts/SubLayout';
 import { JoinWithCode } from './components/sub/JoinWithCode';
 import PlaceholderPage from './components/common/PlaceholderPage';
+import UserProfile from './components/profile/UserProfile';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -170,6 +171,16 @@ export default function App() {
           <Route path="journal" element={<PlaceholderPage section="sub" tab="journal" />} />
           <Route path="report" element={<PlaceholderPage section="sub" tab="report" />} />
         </Route>
+
+        {/* Profile routes */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />

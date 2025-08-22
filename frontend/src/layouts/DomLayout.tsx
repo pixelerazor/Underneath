@@ -1,9 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Menu, Plus, Trophy, Award } from 'lucide-react';
+import { Menu, Plus, Trophy, Award, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useConnectionStore } from '@/store/useConnectionStore';
 import { WelcomeScreen } from '@/components/dom/WelcomeScreen';
@@ -62,6 +69,7 @@ export function DomLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const { connectedSub } = useConnectionStore();
 
   // Bestimme aktuelle Section basierend auf URL
@@ -95,6 +103,11 @@ export function DomLayout() {
     // Später: Öffne entsprechendes Modal
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
@@ -124,6 +137,27 @@ export function DomLayout() {
                     {config.label}
                   </button>
                 ))}
+                
+                {/* Profile & Logout Section */}
+                <div className="border-t pt-4 mt-6">
+                  <button
+                    onClick={() => {
+                      navigate('/profile');
+                      setSidebarOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-secondary/50 flex items-center gap-2"
+                  >
+                    <User className="h-4 w-4" />
+                    Profil
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Abmelden
+                  </button>
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
@@ -134,10 +168,29 @@ export function DomLayout() {
             <span className="text-sm font-semibold">{user?.displayName || user?.email}</span>
           </div>
 
-          {/* Plus Button */}
-          <Button variant="ghost" size="icon" onClick={handlePlusClick}>
-            <Plus className="h-5 w-5" />
-          </Button>
+          {/* Profile Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                Profil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePlusClick}>
+                <Plus className="mr-2 h-4 w-4" />
+                Neu erstellen
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Abmelden
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Tab Bar */}

@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Menu, Bell, Heart, Clock } from 'lucide-react';
+import { Menu, Bell, Heart, Clock, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useConnectionStore } from '@/store/useConnectionStore';
 import { JoinWithCode } from '@/components/sub/JoinWithCode';
@@ -26,6 +33,7 @@ export function SubLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const { connectedDom, connectedSub } = useConnectionStore();
 
   // Ohne DOM-Verbindung -> JoinWithCode anzeigen
@@ -36,6 +44,11 @@ export function SubLayout() {
   const handleNavigation = (path: string) => {
     navigate(path); // relativ zu /sub/*
     setSidebarOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   // Werte aus dem Store ziehen (falls vorhanden), sonst Platzhalter
@@ -83,6 +96,27 @@ export function SubLayout() {
                       </button>
                     );
                   })}
+                  
+                  {/* Profile & Logout Section */}
+                  <div className="border-t pt-4 mt-6">
+                    <button
+                      onClick={() => {
+                        navigate('/profile');
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-secondary/50 flex items-center gap-2"
+                    >
+                      <User className="h-4 w-4" />
+                      Profil
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Abmelden
+                    </button>
+                  </div>
                 </nav>
               </ScrollArea>
             </SheetContent>
@@ -94,10 +128,29 @@ export function SubLayout() {
             <span className="text-sm font-semibold">Underneath {connectedDom.name}</span>
           </div>
 
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" aria-label="Benachrichtigungen">
-            <Bell className="h-5 w-5" />
-          </Button>
+          {/* Profile Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                Profil
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Bell className="mr-2 h-4 w-4" />
+                Benachrichtigungen
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Abmelden
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Status Bar */}

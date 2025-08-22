@@ -1,0 +1,248 @@
+/**
+ * User Profile Component
+ * 
+ * Main profile page for user account management and settings.
+ * Provides sections for personal information, connection management, and account settings.
+ * 
+ * Features:
+ * - Personal information display and editing
+ * - Connection management section
+ * - Account security settings
+ * - Role-specific information display
+ * 
+ * @component UserProfile
+ * @author Underneath Team
+ * @version 1.0.0
+ */
+
+import { useState, useEffect } from 'react';
+import { User, Mail, Shield, Settings, Calendar } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
+import ConnectionManagement from './ConnectionManagement';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+export default function UserProfile() {
+  const { user } = useAuthStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+
+  useEffect(() => {
+    setDisplayName(user?.displayName || '');
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    // TODO: Implement profile update API call
+    console.log('Saving profile:', { displayName });
+    setIsEditing(false);
+    // toast.success('Profil erfolgreich aktualisiert');
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    const roleNames = {
+      'DOM': 'Dominante Person',
+      'SUB': 'Submissive Person', 
+      'OBSERVER': 'Beobachter',
+      'ADMIN': 'Administrator'
+    };
+    return roleNames[role as keyof typeof roleNames] || role;
+  };
+
+  const getRoleDescription = (role: string) => {
+    const descriptions = {
+      'DOM': 'Sie können SUBs einladen und Verbindungen verwalten.',
+      'SUB': 'Sie können Einladungen von DOMs annehmen und sich verbinden.',
+      'OBSERVER': 'Sie können Aktivitäten beobachten, aber keine Verbindungen eingehen.',
+      'ADMIN': 'Sie haben vollständige Administratorrechte auf der Plattform.'
+    };
+    return descriptions[role as keyof typeof descriptions] || 'Unbekannte Rolle';
+  };
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-muted-foreground">Bitte melden Sie sich an, um Ihr Profil zu sehen.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Mein Profil</h1>
+        <p className="text-muted-foreground mt-2">
+          Verwalten Sie Ihre Kontoinformationen und Verbindungen
+        </p>
+      </div>
+
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="profile">Profil</TabsTrigger>
+          <TabsTrigger value="connections">Verbindungen</TabsTrigger>
+          <TabsTrigger value="security">Sicherheit</TabsTrigger>
+        </TabsList>
+
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Persönliche Informationen
+              </CardTitle>
+              <CardDescription>
+                Ihre grundlegenden Kontodaten und Profilinformationen
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    E-Mail-Adresse
+                  </Label>
+                  <Input value={user.email} disabled className="bg-muted" />
+                  <p className="text-xs text-muted-foreground">
+                    Die E-Mail-Adresse kann derzeit nicht geändert werden
+                  </p>
+                </div>
+
+                {/* Display Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Anzeigename (optional)</Label>
+                  {isEditing ? (
+                    <Input
+                      id="displayName"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Ihr bevorzugter Name"
+                    />
+                  ) : (
+                    <Input
+                      value={displayName || 'Nicht festgelegt'}
+                      disabled
+                      className="bg-muted"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Role Information */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Ihre Rolle
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-sm">
+                    {getRoleDisplayName(user.role)}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {getRoleDescription(user.role)}
+                </p>
+              </div>
+
+              {/* Account Created */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Mitglied seit
+                </Label>
+                <Input
+                  value={new Date(user.createdAt || Date.now()).toLocaleDateString('de-DE', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4">
+                {isEditing ? (
+                  <>
+                    <Button onClick={handleSaveProfile}>
+                      Änderungen speichern
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsEditing(false);
+                        setDisplayName(user.displayName || '');
+                      }}
+                    >
+                      Abbrechen
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => setIsEditing(true)}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Profil bearbeiten
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Connections Tab */}
+        <TabsContent value="connections">
+          <ConnectionManagement />
+        </TabsContent>
+
+        {/* Security Tab */}
+        <TabsContent value="security" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Sicherheitseinstellungen
+              </CardTitle>
+              <CardDescription>
+                Verwalten Sie Passwort und Sicherheitsoptionen
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  🔒 <strong>Sicherheitsfeatures kommen bald:</strong>
+                </p>
+                <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
+                  <li>• Passwort ändern</li>
+                  <li>• Zwei-Faktor-Authentifizierung</li>
+                  <li>• Login-Verlauf einsehen</li>
+                  <li>• Aktive Sitzungen verwalten</li>
+                </ul>
+              </div>
+              
+              <div className="text-center pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Diese Funktionen werden in einer zukünftigen Version verfügbar sein.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

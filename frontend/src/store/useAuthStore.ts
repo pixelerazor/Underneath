@@ -12,6 +12,7 @@ interface User {
   displayName?: string
   avatarUrl?: string
   bio?: string
+  createdAt?: string
 }
 
 interface AuthState {

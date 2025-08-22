@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Copy, Mail, Clock, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Copy, Clock, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { invitationService } from '@/services/invitationService';
 import { useConnectionStore } from '@/store/useConnectionStore';
+import { ConnectionService } from '@/services/connectionService';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,28 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [canCreateInvitation, setCanCreateInvitation] = useState(true);
+  const [connectionCheckLoading, setConnectionCheckLoading] = useState(true);
+
+  // Check connection availability when modal opens
+  useEffect(() => {
+    if (open) {
+      checkConnectionAvailability();
+    }
+  }, [open]);
+
+  const checkConnectionAvailability = async () => {
+    setConnectionCheckLoading(true);
+    try {
+      const canSend = await ConnectionService.canSendInvitation();
+      setCanCreateInvitation(canSend);
+    } catch (error) {
+      console.error('Error checking connection availability:', error);
+      setCanCreateInvitation(false);
+    } finally {
+      setConnectionCheckLoading(false);
+    }
+  };
 
   const generateCode = async () => {
     setLoading(true);
@@ -60,9 +83,11 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
           });
         }
       }
-    } catch (error) {
-      toast.error('Fehler beim Erstellen des Einladungscodes');
-      console.error(error);
+    } catch (error: any) {
+      // Use connection service to get user-friendly error messages
+      const errorMessage = ConnectionService.getConnectionErrorMessage(error);
+      toast.error(errorMessage);
+      console.error('Error generating invitation:', error);
     } finally {
       setLoading(false);
     }
@@ -87,7 +112,22 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          {!inviteCode ? (
+          {/* Connection availability check */}
+          {connectionCheckLoading ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">Prüfe Verbindungsstatus...</p>
+            </div>
+          ) : !canCreateInvitation ? (
+            <div className="bg-orange-50 dark:bg-orange-950/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-2">
+                ⚠️ Einladung nicht möglich
+              </p>
+              <p className="text-sm text-orange-700 dark:text-orange-300">
+                Sie haben bereits eine aktive Verbindung. Sie können nur mit einem SUB gleichzeitig verbunden sein. 
+                Beenden Sie erst Ihre aktuelle Verbindung in den Profileinstellungen.
+              </p>
+            </div>
+          ) : !inviteCode ? (
             <>
               {/* Email Input BEFORE generating code */}
               <div className="space-y-2">
@@ -98,13 +138,18 @@ const CreateInvitationModal = ({ open, onClose }: CreateInvitationModalProps) =>
                   placeholder="sub@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={!canCreateInvitation}
                 />
                 <p className="text-sm text-muted-foreground">
                   Wenn angegeben, wird der Code automatisch per E-Mail versendet.
                 </p>
               </div>
               
-              <Button onClick={generateCode} className="w-full" disabled={loading}>
+              <Button 
+                onClick={generateCode} 
+                className="w-full" 
+                disabled={loading || !canCreateInvitation}
+              >
                 {loading ? 'Generiere...' : email.trim() ? 'Code generieren & E-Mail senden' : 'Code generieren'}
               </Button>
             </>

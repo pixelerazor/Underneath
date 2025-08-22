@@ -72,7 +72,7 @@ export const register = async (email: string, password: string, role: string) =>
     
     // Response ist direkt in response.data, NICHT response.data.data!
     const { user, accessToken, refreshToken } = response.data;
-    useAuthStore.getState().login(user, accessToken, refreshToken);
+    useAuthStore.getState().login({ ...user, status: 'ACTIVE' as const, role: user.role as any }, accessToken, refreshToken);
     return response.data;
   } catch (error) {
     if (error instanceof AxiosError) {
@@ -98,7 +98,7 @@ export const login = async (email: string, password: string) => {
     
     // Response ist direkt in response.data, NICHT response.data.data!
     const { user, accessToken, refreshToken } = response.data;
-    useAuthStore.getState().login(user, accessToken, refreshToken);
+    useAuthStore.getState().login({ ...user, status: 'ACTIVE' as const, role: user.role as any }, accessToken, refreshToken);
     return response.data;
   } catch (error) {
     if (error instanceof AxiosError) {
