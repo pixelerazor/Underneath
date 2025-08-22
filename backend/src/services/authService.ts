@@ -1,105 +1,181 @@
-import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma';
-import { User } from '@prisma/client';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '../store/useAuthStore';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-export async function generateTokens(
-  user: User,
-  userAgent?: string | undefined,
-  ipAddress?: string
-) {
-  // Access Token (kurzlebig - 15min)
-  const accessToken = jwt.sign(
-    {
-      userId: user.id,
-      role: user.role,
-      type: 'access'
-    },
-    JWT_SECRET,
-    { expiresIn: '15m' }
-  );
-
-  // Refresh Token (langlebig - 7 Tage)
-  const refreshToken = jwt.sign(
-    {
-      userId: user.id,
-      type: 'refresh'
-    },
-    JWT_REFRESH_SECRET,
-    { expiresIn: '7d' }
-  );
-
-  // Speichere Refresh Token in der DB
-  await prisma.userSession.create({
-    data: {
-      userId: user.id,
-      refreshToken,
-      userAgent: userAgent || 'unknown',
-      ipAddress: ipAddress || 'unknown',
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 Tage
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const { accessToken } = useAuthStore.getState();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
-  });
-
-  return {
-    accessToken,
-    refreshToken,
-    expiresIn: 15 * 60 // 15 Minuten in Sekunden
-  };
-}
-
-export async function validateRefreshToken(token: string): Promise<User | null> {
-  try {
-    // Verifiziere Token
-    const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as {
-      userId: string;
-      type: string;
-    };
-
-    if (decoded.type !== 'refresh') {
-      return null;
-    }
-
-    // Prüfe ob Token in DB existiert und gültig ist
-    const session = await prisma.userSession.findFirst({
-      where: {
-        userId: decoded.userId,
-        refreshToken: token,
-        expiresAt: {
-          gt: new Date()
-        },
-        revokedAt: null
-      }
-    });
-
-    if (!session) {
-      return null;
-    }
-
-    // Hole User
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
-
-    return user;
-  } catch (error) {
-    return null;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-}
+);
 
-export async function invalidateSession(
-  userId: string,
-  refreshToken?: string
-): Promise<void> {
-  const where = refreshToken
-    ? { userId, refreshToken }
-    : { userId, revokedAt: null };
-
-  await prisma.userSession.updateMany({
-    where,
-    data: {
-      revokedAt: new Date()
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && originalRequest && !(originalRequest as any)._retry) {
+      (originalRequest as any)._retry = true;
+      
+      try {
+        const newAccessToken = await refreshAccessToken();
+        if (newAccessToken && originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        useAuthStore.getState().logout();
+        return Promise.reject(refreshError);
+      }
     }
-  });
+    return Promise.reject(error);
+  }
+);
+
+// Backend response types (actual structure from backend)
+interface BackendAuthResponse {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+  accessToken: string;
+  refreshToken: string;
 }
+
+interface BackendErrorResponse {
+  error?: string;
+  errors?: Array<{ field: string; message: string }>;
+}
+
+export const register = async (email: string, password: string, role: string) => {
+  try {
+    const response = await api.post<BackendAuthResponse>('/auth/register', {
+      email,
+      password,
+      confirmPassword: password, // Backend erwartet confirmPassword!
+      role: role.toUpperCase(), // Stelle sicher dass role uppercase ist (DOM/SUB)
+    });
+    
+    // Response data ist direkt in response.data, NICHT response.data.data
+    const { user, accessToken, refreshToken } = response.data;
+    
+    // Speichere in Store
+    useAuthStore.getState().login(user, accessToken, refreshToken);
+    
+    return response.data;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const errorData = error.response?.data as BackendErrorResponse;
+      
+      // Handle validation errors vom Backend
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        const messages = errorData.errors.map(e => e.message).join(', ');
+        throw new Error(messages);
+      }
+      
+      // Standard error message
+      throw new Error(errorData?.error || 'Registration failed');
+    }
+    throw error;
+  }
+};
+
+export const login = async (email: string, password: string) => {
+  try {
+    const response = await api.post<BackendAuthResponse>('/auth/login', {
+      email,
+      password,
+    });
+    
+    // Response data ist direkt in response.data, NICHT response.data.data
+    const { user, accessToken, refreshToken } = response.data;
+    
+    // Speichere in Store
+    useAuthStore.getState().login(user, accessToken, refreshToken);
+    
+    return response.data;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const errorData = error.response?.data as BackendErrorResponse;
+      throw new Error(errorData?.error || 'Login failed');
+    }
+    throw error;
+  }
+};
+
+export const logout = async () => {
+  try {
+    const { refreshToken } = useAuthStore.getState();
+    if (refreshToken) {
+      await api.post('/auth/logout', { refreshToken });
+    }
+  } catch (error) {
+    // Logout auch bei Fehler lokal durchführen
+    console.error('Logout error:', error);
+  } finally {
+    // Immer local logout durchführen
+    useAuthStore.getState().logout();
+  }
+};
+
+export const refreshAccessToken = async (): Promise<string> => {
+  try {
+    const { refreshToken } = useAuthStore.getState();
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+    
+    const response = await api.post<{ accessToken: string }>('/auth/refresh', {
+      refreshToken,
+    });
+    
+    // Backend gibt nur { accessToken: "..." } zurück
+    const { accessToken } = response.data;
+    
+    // Update access token im Store
+    const currentUser = useAuthStore.getState().user;
+    const currentRefreshToken = useAuthStore.getState().refreshToken;
+    
+    if (currentUser && currentRefreshToken) {
+      useAuthStore.getState().login(currentUser, accessToken, currentRefreshToken);
+    }
+    
+    return accessToken;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const errorData = error.response?.data as BackendErrorResponse;
+      throw new Error(errorData?.error || 'Token refresh failed');
+    }
+    throw error;
+  }
+};
+
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get<{ user: any }>('/auth/me');
+    // Backend gibt { user: {...} } zurück
+    return response.data.user;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const errorData = error.response?.data as BackendErrorResponse;
+      throw new Error(errorData?.error || 'Failed to fetch user data');
+    }
+    throw error;
+  }
+};
+
+export default api;
