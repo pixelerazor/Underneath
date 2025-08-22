@@ -1,44 +1,78 @@
 import { Router } from 'express';
-import passport from 'passport';
-import * as authController from '../controllers/authController';
+import { 
+  register, 
+  login, 
+  logout, 
+  refreshToken, 
+  changePassword, 
+  getCurrentUser 
+} from '../controllers/authController';
+import { authenticateToken } from '../middleware/auth';
+import { validateRequest } from '../middleware/validateRequest';
+import { z } from 'zod';
 
-const authRoutes = Router();
+const router = Router();
 
-const requireAuth = passport.authenticate('jwt', { session: false });
+// Validation schemas using Zod
+const registerSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email format'),
+    password: z.string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/\d/, 'Password must contain at least one number')
+      .regex(/[@$!%*?&]/, 'Password must contain at least one special character'),
+    confirmPassword: z.string(),
+    role: z.enum(['DOM', 'SUB'], {
+      errorMap: () => ({ message: 'Role must be either DOM or SUB' })
+    })
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"]
+  })
+});
 
-/**
- * @route   POST /api/auth/register
- * @desc    Register a new user
- * @access  Public
- */
-authRoutes.post('/register', authController.register);
+const loginSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email format'),
+    password: z.string().min(1, 'Password is required')
+  })
+});
 
-/**
- * @route   POST /api/auth/login
- * @desc    Authenticate user & get tokens
- * @access  Public
- */
-authRoutes.post('/login', authController.login);
+const changePasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/\d/, 'Password must contain at least one number')
+      .regex(/[@$!%*?&]/, 'Password must contain at least one special character'),
+    confirmNewPassword: z.string()
+  }).refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New passwords don't match",
+    path: ["confirmNewPassword"]
+  }).refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"]
+  })
+});
 
-/**
- * @route   POST /api/auth/refresh
- * @desc    Get new access token using refresh token
- * @access  Public
- */
-authRoutes.post('/refresh', authController.refresh);
+const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, 'Refresh token is required')
+  })
+});
 
-/**
- * @route   POST /api/auth/logout
- * @desc    Logout user & invalidate tokens
- * @access  Private
- */
-authRoutes.post('/logout', requireAuth, authController.logout);
+// Public routes
+router.post('/register', validateRequest(registerSchema), register);
+router.post('/login', validateRequest(loginSchema), login);
+router.post('/refresh', validateRequest(refreshTokenSchema), refreshToken);
 
-/**
- * @route   GET /api/auth/me
- * @desc    Get current user data
- * @access  Private
- */
-authRoutes.get('/me', requireAuth, authController.me);
+// Protected routes
+router.post('/logout', authenticateToken, logout);
+router.post('/change-password', authenticateToken, validateRequest(changePasswordSchema), changePassword);
+router.get('/me', authenticateToken, getCurrentUser);
 
-export default authRoutes;
+export default router;

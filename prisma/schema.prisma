@@ -1,4 +1,5 @@
-// Prisma schema for Underneath
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -9,132 +10,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
-enum UserRole {
-  ADMIN
-  DOM
-  SUB
-  OBSERVER
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-  PENDING
-}
-
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  EXPIRED
-}
-
-enum ConnectionStatus {
-  ACTIVE
-  PAUSED
-  TERMINATED
-}
-
-// Base User model
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  passwordHash String
-  role         UserRole
-  status       UserStatus @default(PENDING)
-
-  // Profile
-  displayName String?
-  avatarUrl   String?
-  bio         String?
-
-  // Security
-  twoFactorSecret  String?
-  twoFactorEnabled Boolean @default(false)
-
-  // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
-
-  // Relations
-  domInvitations Invitation[] @relation("DomInvitations")
-  domConnections Connection[] @relation("DomConnections")
-  subConnections Connection[] @relation("SubConnections")
-
-  @@index([email])
-  @@index([role])
-  @@index([status])
+  userId    String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  role      String    // DOM or SUB
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
-// Session model for JWT refresh tokens
 model Session {
   id           String   @id @default(uuid())
-  userId       String
   refreshToken String   @unique
-  userAgent    String?
-  ipAddress    String?
+  userId       String
+  user         User     @relation(fields: [userId], references: [userId])
   expiresAt    DateTime
   createdAt    DateTime @default(now())
-
-  @@index([userId])
-  @@index([refreshToken])
-}
-
-// Invitation Model
-model Invitation {
-  id         String           @id @default(uuid())
-  code       String           @unique
-  domId      String
-  email      String
-  status     InvitationStatus @default(PENDING)
-  expiresAt  DateTime
-  acceptedAt DateTime?
-  createdAt  DateTime         @default(now())
-
-  // Relations
-  dom User @relation(name: "DomInvitations", fields: [domId], references: [id])
-
-  @@index([code])
-  @@index([domId])
-  @@index([status])
-}
-
-// Connection Model
-model Connection {
-  id        String           @id @default(uuid())
-  domId     String
-  subId     String
-  status    ConnectionStatus @default(ACTIVE)
-  startedAt DateTime         @default(now())
-  endedAt   DateTime?
-
-  // Relations
-  dom User @relation(name: "DomConnections", fields: [domId], references: [id])
-  sub User @relation(name: "SubConnections", fields: [subId], references: [id])
-
-  @@index([domId])
-  @@index([subId])
-  @@index([status])
-}
-
-// Audit log for tracking all changes
-model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String?
-  action    String
-  entity    String
-  entityId  String?
-  oldValue  Json?
-  newValue  Json?
-  metadata  Json?
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([entity, entityId])
-  @@index([createdAt])
 }

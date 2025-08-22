@@ -1,30 +1,30 @@
-// backend/src/middleware/validateRequest.ts
 import { Request, Response, NextFunction } from 'express';
 import { AnyZodObject, ZodError } from 'zod';
-import { logger } from '../utils/logger';
 
 export const validateRequest = (schema: AnyZodObject) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await schema.parseAsync({
         body: req.body,
         query: req.query,
-        params: req.params,
+        params: req.params
       });
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        logger.warn('Validierungsfehler:', error.errors);
+        const errors = error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }));
+        
         res.status(400).json({
-          error: 'Validierungsfehler',
-          details: error.errors.map(e => ({
-            path: e.path.join('.'),
-            message: e.message,
-          })),
+          error: 'Validation failed',
+          errors: errors
         });
-      } else {
-        next(error);
+        return;
       }
+      
+      res.status(500).json({ error: 'Internal server error' });
     }
   };
 };
