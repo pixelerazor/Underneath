@@ -11,20 +11,38 @@ datasource db {
 }
 
 model User {
-  userId    String    @id @default(uuid())
+  id        String    @id @default(uuid())
   email     String    @unique
   password  String
   role      String    // DOM or SUB
   sessions  Session[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  
+  // Relations for invitation system
+  sentInvitations     Invitation[] @relation("InvitationSender")
+  receivedInvitations Invitation[] @relation("InvitationReceiver")
 }
 
 model Session {
   id           String   @id @default(uuid())
   refreshToken String   @unique
   userId       String
-  user         User     @relation(fields: [userId], references: [userId])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt    DateTime
   createdAt    DateTime @default(now())
+}
+
+model Invitation {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  senderId   String
+  sender     User     @relation("InvitationSender", fields: [senderId], references: [id])
+  receiverId String?
+  receiver   User?    @relation("InvitationReceiver", fields: [receiverId], references: [id])
+  status     String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

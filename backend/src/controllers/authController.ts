@@ -5,12 +5,18 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+interface JwtPayload {
+  userId: string;
+  email?: string;
+  role?: string;
+}
+
 // Register new user
 export const register = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email, password, confirmPassword, role } = req.body;
 
-    // Validation
+    // Validation is handled by Zod in routes, but keep basic checks
     if (!email || !password || !confirmPassword || !role) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -35,24 +41,24 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user - using 'id' field as per Prisma schema
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        role
+        role: role.toUpperCase() // Ensure uppercase
       }
     });
 
     // Generate tokens
     const accessToken = jwt.sign(
-      { userId: user.userId, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'default-secret',
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
-      { userId: user.userId },
+      { userId: user.id },
       process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
       { expiresIn: '30d' }
     );
@@ -60,15 +66,15 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     // Save refresh token in database
     await prisma.session.create({
       data: {
-        refreshToken, // Korrigiert von 'token' zu 'refreshToken'
-        userId: user.userId,
+        refreshToken,
+        userId: user.id,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       }
     });
 
     return res.status(201).json({
       user: {
-        userId: user.userId,
+        id: user.id,
         email: user.email,
         role: user.role
       },
@@ -78,6 +84,9 @@ export const register = async (req: Request, res: Response): Promise<Response> =
 
   } catch (error) {
     console.error('Register error:', error);
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -110,35 +119,35 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
     // Generate tokens
     const accessToken = jwt.sign(
-      { userId: user.userId, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'default-secret',
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
-      { userId: user.userId },
+      { userId: user.id },
       process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
       { expiresIn: '30d' }
     );
 
     // Update or create session
     const existingSession = await prisma.session.findFirst({
-      where: { userId: user.userId }
+      where: { userId: user.id }
     });
 
     if (existingSession) {
       await prisma.session.update({
-        where: { id: existingSession.id }, // Korrigiert: Verwende id statt userId
+        where: { id: existingSession.id },
         data: {
-          refreshToken, // Korrigiert von 'token' zu 'refreshToken'
+          refreshToken,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         }
       });
     } else {
       await prisma.session.create({
         data: {
-          refreshToken, // Korrigiert von 'token' zu 'refreshToken'
-          userId: user.userId,
+          refreshToken,
+          userId: user.id,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         }
       });
@@ -146,7 +155,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
     return res.json({
       user: {
-        userId: user.userId,
+        id: user.id,
         email: user.email,
         role: user.role
       },
@@ -156,6 +165,9 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
   } catch (error) {
     console.error('Login error:', error);
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -169,22 +181,30 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
       return res.status(401).json({ error: 'Refresh token is required' });
     }
 
-    // Verify refresh token
-    let _decoded: any;
+    // Verify refresh token and extract payload
+    let payload: JwtPayload;
     try {
-      _decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'default-refresh-secret');
+      payload = jwt.verify(
+        refreshToken, 
+        process.env.JWT_REFRESH_SECRET || 'default-refresh-secret'
+      ) as JwtPayload;
     } catch (error) {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    // Check if session exists
+    // Check if session exists and validate it
     const session = await prisma.session.findUnique({
-      where: { refreshToken }, // Korrigiert von 'token' zu 'refreshToken'
+      where: { refreshToken },
       include: { user: true }
     });
 
     if (!session) {
       return res.status(401).json({ error: 'Session not found' });
+    }
+
+    // Validate that token belongs to the correct user
+    if (session.userId !== payload.userId) {
+      return res.status(401).json({ error: 'Token mismatch' });
     }
 
     // Check if session is expired
@@ -198,7 +218,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
     // Generate new access token
     const accessToken = jwt.sign(
       { 
-        userId: session.user.userId, // Korrigiert: Verwende userId statt id
+        userId: session.user.id,
         email: session.user.email, 
         role: session.user.role 
       },
@@ -210,6 +230,9 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
 
   } catch (error) {
     console.error('Refresh token error:', error);
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -218,19 +241,24 @@ export const refreshToken = async (req: Request, res: Response): Promise<Respons
 export const logout = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { refreshToken } = req.body;
+    const userId = (req as any).user?.userId;
 
-    if (!refreshToken) {
-      return res.status(400).json({ error: 'Refresh token is required' });
-    }
+    // Try to logout with refresh token first
+    if (refreshToken) {
+      const session = await prisma.session.findUnique({
+        where: { refreshToken }
+      });
 
-    // Delete session
-    const session = await prisma.session.findUnique({
-      where: { refreshToken } // Korrigiert von 'token' zu 'refreshToken'
-    });
-
-    if (session) {
-      await prisma.session.delete({
-        where: { id: session.id }
+      if (session) {
+        await prisma.session.delete({
+          where: { id: session.id }
+        });
+      }
+    } 
+    // Otherwise logout all sessions for the user
+    else if (userId) {
+      await prisma.session.deleteMany({
+        where: { userId }
       });
     }
 
@@ -238,6 +266,9 @@ export const logout = async (req: Request, res: Response): Promise<Response> => 
 
   } catch (error) {
     console.error('Logout error:', error);
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -246,12 +277,13 @@ export const logout = async (req: Request, res: Response): Promise<Response> => 
 export const changePassword = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
-    const userId = (req as any).user?.userId; // Assuming middleware sets user
+    const userId = (req as any).user?.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Validation is handled by Zod, but keep basic checks
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -260,13 +292,9 @@ export const changePassword = async (req: Request, res: Response): Promise<Respo
       return res.status(400).json({ error: 'New passwords do not match' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
-    }
-
     // Get user
     const user = await prisma.user.findUnique({
-      where: { userId }
+      where: { id: userId }
     });
 
     if (!user) {
@@ -285,19 +313,22 @@ export const changePassword = async (req: Request, res: Response): Promise<Respo
 
     // Update password
     await prisma.user.update({
-      where: { userId },
+      where: { id: userId },
       data: { password: hashedPassword }
     });
 
-    // Invalidate all sessions (optional - forces re-login)
+    // Invalidate all sessions (forces re-login)
     await prisma.session.deleteMany({
       where: { userId }
     });
 
-    return res.json({ message: 'Password changed successfully' });
+    return res.json({ message: 'Password changed successfully. Please login again.' });
 
   } catch (error) {
     console.error('Change password error:', error);
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -305,16 +336,16 @@ export const changePassword = async (req: Request, res: Response): Promise<Respo
 // Get current user
 export const getCurrentUser = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const userId = (req as any).user?.userId; // Korrigiert: Verwende userId statt id
+    const userId = (req as any).user?.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { userId },
+      where: { id: userId },
       select: {
-        userId: true,
+        id: true,
         email: true,
         role: true,
         createdAt: true,
@@ -330,6 +361,9 @@ export const getCurrentUser = async (req: Request, res: Response): Promise<Respo
 
   } catch (error) {
     console.error('Get current user error:', error);
+    if (error instanceof Error) {
+      return res.status(500).json({ error: error.message });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
