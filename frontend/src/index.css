@@ -53,3 +53,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Toast Styling for Mobile */
+.my-toast {
+  margin: 0 16px;
+  max-width: calc(100vw - 32px);
+  font-size: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .my-toast {
+    margin: 0 12px;
+    max-width: calc(100vw - 24px);
+    font-size: 15px;
+    padding: 14px 18px;
+  }
+}

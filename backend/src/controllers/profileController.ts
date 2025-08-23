@@ -46,7 +46,7 @@ export class ProfileController {
    */
   static async getProfile(req: Request, res: Response) {
     try {
-      const userId = (req as any).user.id;
+      const userId = (req as any).user.userId;
       const profileData = await ProfileService.getUserProfile(userId);
 
       res.json({
@@ -77,7 +77,7 @@ export class ProfileController {
    */
   static async updateProfile(req: Request, res: Response) {
     try {
-      const userId = (req as any).user.id;
+      const userId = (req as any).user.userId;
       
       // Validate request body
       const validatedData = profileUpdateSchema.parse(req.body);
@@ -125,7 +125,7 @@ export class ProfileController {
    */
   static async getProgress(req: Request, res: Response) {
     try {
-      const userId = (req as any).user.id;
+      const userId = (req as any).user.userId;
       const progress = await ProfileService.getProfileProgress(userId);
 
       res.json({
@@ -201,7 +201,7 @@ export class ProfileController {
    */
   static async completeProfile(req: Request, res: Response) {
     try {
-      const userId = (req as any).user.id;
+      const userId = (req as any).user.userId;
       
       // Get current profile and check completeness
       const profileData = await ProfileService.getUserProfile(userId);

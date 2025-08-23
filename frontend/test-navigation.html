@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Navigation Test</title>
+</head>
+<body>
+    <h1>Navigation Tests</h1>
+    
+    <h2>Test URLs:</h2>
+    <ul>
+        <li><a href="http://localhost:5176/" target="_blank">Root (should redirect to login)</a></li>
+        <li><a href="http://localhost:5176/login" target="_blank">Login Page</a></li>
+        <li><a href="http://localhost:5176/dashboard/overview" target="_blank">Dashboard Overview (after login)</a></li>
+        <li><a href="http://localhost:5176/profile" target="_blank">Profile Overview</a></li>
+        <li><a href="http://localhost:5176/profile?tab=comprehensive" target="_blank">Profile - Detaillierte Daten</a></li>
+        <li><a href="http://localhost:5176/profile?tab=comprehensive#basic" target="_blank">Profile - Detaillierte Daten - Basic</a></li>
+    </ul>
+
+    <h2>What to test:</h2>
+    <ol>
+        <li>Login redirects to dashboard/overview</li>
+        <li>Navigate to Profile → Detaillierte Daten</li>
+        <li>Check if "Detaillierte Daten" tab is highlighted/underlined red</li>
+        <li>Check if sub-navigation appears (Basisdaten, Lebenssituation, etc.)</li>
+        <li>Click on sub-navigation items</li>
+    </ol>
+
+    <script>
+        console.log('Test page loaded. Open browser dev tools to see navigation logs.');
+    </script>
+</body>
+</html>

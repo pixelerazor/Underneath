@@ -8,32 +8,9 @@
  * @version 1.0.0
  */
 
-import axios, { InternalAxiosRequestConfig } from 'axios';
+import { apiClient } from './apiClient';
+import { profileCache } from './profileCache';
 import { useAuthStore } from '../store/useAuthStore';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-// Create configured axios instance with auth interceptor
-const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add request interceptor to include auth token
-api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const { accessToken } = useAuthStore.getState();
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 export interface ProfileData {
   preferredName?: string;
@@ -81,11 +58,14 @@ export interface ProfileResponse {
     goals?: string;
     boundaries?: any;
     communication?: any;
+    data?: any;
     completedSteps: string[];
     createdAt?: string;
     updatedAt?: string;
-  };
+  } | null;
   isNewProfile: boolean;
+  isComplete: boolean;
+  progress: number;
 }
 
 export interface ProfileProgress {
@@ -97,11 +77,23 @@ export interface ProfileProgress {
 
 export class ProfileService {
   /**
-   * Get current user's profile
+   * Get current user's profile with caching
    */
   static async getProfile(): Promise<ProfileResponse> {
-    const response = await api.get('/profile');
-    return response.data.data;
+    const { user } = useAuthStore.getState();
+    if (!user?.id) {
+      throw new Error('No authenticated user');
+    }
+
+    return profileCache.getProfile(user.id, async () => {
+      const response = await apiClient.get('/profile');
+      // Backend returns { success: true, data: {...} }
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.error || 'Failed to fetch profile');
+      }
+    });
   }
 
   /**
@@ -112,32 +104,57 @@ export class ProfileService {
     isComplete: boolean;
     nextSteps: string[];
   }> {
-    const response = await api.put('/profile', profileData);
-    return response.data.data;
+    const { user } = useAuthStore.getState();
+    
+    const response = await apiClient.put('/profile', profileData);
+    
+    // Clear cache after update
+    if (user?.id) {
+      profileCache.clearUserCache(user.id);
+    }
+    
+    // Backend returns { success: true, data: {...} }
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.error || 'Failed to update profile');
+    }
   }
 
   /**
    * Get profile completion progress
    */
   static async getProgress(): Promise<ProfileProgress> {
-    const response = await api.get('/profile/progress');
-    return response.data.data;
+    const response = await apiClient.get('/profile/progress');
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.error || 'Failed to get progress');
+    }
   }
 
   /**
    * Mark profile as completed (if requirements are met)
    */
   static async completeProfile(): Promise<{ isComplete: boolean }> {
-    const response = await api.post('/profile/complete');
-    return response.data.data;
+    const response = await apiClient.post('/profile/complete');
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.error || 'Failed to complete profile');
+    }
   }
 
   /**
    * Get profile template for role
    */
   static async getTemplate(role: string): Promise<any> {
-    const response = await api.get(`/profile/template/${role}`);
-    return response.data.data;
+    const response = await apiClient.get(`/profile/template/${role}`);
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.error || 'Failed to get template');
+    }
   }
 
   /**

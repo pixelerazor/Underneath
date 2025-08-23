@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Menu, Bell, Heart, Clock, LogOut, User, Settings } from 'lucide-react';
+import { Menu, Bell, Clock, LogOut, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -15,7 +15,10 @@ import {
 import { useAuthStore } from '@/store/useAuthStore';
 import { useConnectionStore } from '@/store/useConnectionStore';
 import { JoinWithCode } from '@/components/sub/JoinWithCode';
+import UserProfile from '@/components/profile/UserProfile';
+import { PAGE_SECTIONS, getPageConfigByPath, getPageTitle } from '@/utils/pageConfig';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Sidebar-Konfiguration (relative Pfade, da SubLayout unter /sub/* gerendert wird)
 const SIDEBAR_ITEMS = [
@@ -28,13 +31,46 @@ const SIDEBAR_ITEMS = [
   { id: 'report', label: 'Report', path: 'report', icon: Clock },
 ];
 
+
 export function SubLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentHash, setCurrentHash] = useState(() => window.location.hash);
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { connectedDom, connectedSub } = useConnectionStore();
+
+  // Listen for hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash);
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Auto-redirect to #basic if on comprehensive tab without hash
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    
+    if (tabParam === 'comprehensive' && !window.location.hash) {
+      navigate('/profile?tab=comprehensive#basic', { replace: true });
+    }
+  }, [location.search, navigate]);
+
+  // Get page configuration
+  const pageConfig = useMemo(() => {
+    return getPageConfigByPath(location.pathname, location.search);
+  }, [location.pathname, location.search, currentHash]);
+
+  const pageTitle = useMemo(() => {
+    return getPageTitle(location.pathname);
+  }, [location.pathname]);
+
+  const { section: currentSection, currentTab, currentSubTab } = pageConfig;
 
   // Ohne DOM-Verbindung -> JoinWithCode anzeigen
   if (!connectedDom) {
@@ -42,9 +78,18 @@ export function SubLayout() {
   }
 
   const handleNavigation = (path: string) => {
-    navigate(path); // relativ zu /sub/*
+    // Wenn absoluter Pfad (z.B. /profile), direkt navigieren
+    if (path.startsWith('/')) {
+      navigate(path);
+    } else {
+      navigate(path); // relativ zu /sub/*
+    }
     setSidebarOpen(false);
   };
+
+  // Prüfe ob wir auf der Profilseite sind
+  const isProfilePage = location.pathname.startsWith('/profile');
+  
 
   const handleLogout = () => {
     logout();
@@ -122,10 +167,9 @@ export function SubLayout() {
             </SheetContent>
           </Sheet>
 
-          {/* Center: App Name + Dom Name */}
+          {/* Center: Page Title */}
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Underneath {connectedDom.name}</span>
+            <span className="text-lg font-semibold">{pageTitle}</span>
           </div>
 
           {/* Profile Menu */}
@@ -163,6 +207,65 @@ export function SubLayout() {
           </div>
           <Progress value={pointsPct} className="h-2" />
         </div>
+
+        {/* Main Tab Bar */}
+        {currentSection && (
+          <div className="border-t overflow-x-auto">
+            <Tabs value={currentTab?.id || ''} onValueChange={(value) => {
+              const tab = currentSection.tabs.find(t => t.id === value);
+              if (tab) {
+                console.log('SubLayout navigating to:', tab.path);
+                navigate(tab.path);
+              }
+            }}>
+              <TabsList className="inline-flex h-10 rounded-none bg-transparent w-full justify-start">
+                {currentSection.tabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:border-transparent data-[state=active]:shadow-none"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
+
+        {/* Sub Tab Bar (for detailed sections like profile editing) */}
+        {currentTab?.subTabs && (
+          <div className="border-t bg-muted/20 overflow-x-auto">
+            <div className="inline-flex h-9 items-center w-full px-2">
+              {currentTab.subTabs.map((subTab) => (
+                <button
+                  key={subTab.id}
+                  onClick={() => {
+                    // Navigate to the main path and set hash
+                    navigate(`/profile?tab=comprehensive#${subTab.id}`);
+                    // Also update browser hash
+                    window.location.hash = `#${subTab.id}`;
+                    // Trigger a small delay to ensure hash is set
+                    setTimeout(() => {
+                      const element = document.getElementById(subTab.id);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }, 100);
+                  }}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded transition-colors',
+                    currentSubTab?.id === subTab.id || window.location.hash === `#${subTab.id}`
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  {subTab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
@@ -187,7 +290,7 @@ export function SubLayout() {
         </div>
 
         {/* Route Content */}
-        <Outlet />
+        {isProfilePage ? <UserProfile /> : <Outlet />}
       </main>
 
       {/* Floating Action Button */}

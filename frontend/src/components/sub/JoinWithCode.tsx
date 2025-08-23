@@ -62,7 +62,8 @@ export function JoinWithCode() {
           description: `Du bist jetzt mit ${result.connection.domProfile?.displayName || 'deinem DOM'} verbunden.`,
         });
 
-      navigate('/sub/dashboard', { replace: true });
+      // Navigate to onboarding for profile completion
+      navigate('/onboarding', { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ein unerwarteter Fehler ist aufgetreten';
       setError(message);

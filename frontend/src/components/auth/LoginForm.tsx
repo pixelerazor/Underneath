@@ -37,7 +37,7 @@ export function LoginForm() {
       setIsLoading(true);
       setError(null);
       await login(values.email, values.password);
-      navigate('/dashboard');
+      navigate('/dashboard/overview');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during login');
     } finally {

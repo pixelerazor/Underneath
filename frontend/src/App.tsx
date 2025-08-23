@@ -7,8 +7,10 @@ import { DomLayout } from './layouts/DomLayout';
 import { SubLayout } from './layouts/SubLayout';
 import { JoinWithCode } from './components/sub/JoinWithCode';
 import PlaceholderPage from './components/common/PlaceholderPage';
-import UserProfile from './components/profile/UserProfile';
 import ProfileCompletionWizard from './components/onboarding/ProfileCompletionWizard';
+import { Toaster } from 'sonner';
+import { useEffect } from 'react';
+import NotificationService from './services/notificationService';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,9 +22,15 @@ function DashboardRouter() {
   const user = useAuthStore((state) => state.user);
   const searchParams = new URLSearchParams(window.location.search);
   const skipOnboarding = searchParams.get('skip_onboarding') === 'true';
+  
+  // Skip onboarding for direct routes or emergency routes
+  const isDirect = window.location.pathname === '/dashboard/direct' || 
+                   window.location.pathname === '/escape';
 
   // Check if user needs to complete profile (unless explicitly skipping)
-  if (user && !user.profileCompleted && !skipOnboarding) {
+  // Skip onboarding check for profile page since it may be needed for profile completion
+  const isProfilePage = window.location.pathname === '/profile';
+  if (user && !user.profileCompleted && !skipOnboarding && !isDirect && !isProfilePage && window.location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -40,13 +48,65 @@ function DashboardRouter() {
 export default function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+  // Push-Berechtigung beim App-Start anfordern (nur für eingeloggte User)
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Kurz warten, dann Notification-Permission anfordern
+      const timer = setTimeout(() => {
+        console.log('Requesting notification permission for authenticated user...');
+        NotificationService.requestPermission();
+      }, 2000); // 2 Sekunden nach Login
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated]);
+
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Toaster 
+        position="top-center" 
+        theme="dark"
+        toastOptions={{
+          style: {
+            background: 'hsl(0 0% 15%)',
+            border: '2px solid hsl(0 62% 30%)',
+            color: 'hsl(0 0% 75%)',
+            borderRadius: '0.5rem',
+          },
+          className: 'my-toast',
+        }}
+        richColors={false}
+      />
       <Routes>
         {/* Root redirect */}
         <Route
           path="/"
-          element={<Navigate to={isAuthenticated ? '/dashboard/overview' : '/login'} replace />}
+          element={
+            <Navigate 
+              to={isAuthenticated ? '/dashboard/overview?skip_onboarding=true' : '/login'} 
+              replace 
+            />
+          }
+        />
+
+        {/* Direct dashboard access - always allow */}
+        <Route
+          path="/dashboard/direct"
+          element={
+            <ProtectedRoute>
+              <DashboardRouter />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Emergency escape route */}
+        <Route
+          path="/escape"
+          element={
+            <ProtectedRoute>
+              <Navigate to="/dashboard/overview?skip_onboarding=true" replace />
+            </ProtectedRoute>
+          }
         />
 
         {/* Auth routes */}
@@ -180,12 +240,12 @@ export default function App() {
           <Route path="report" element={<PlaceholderPage section="sub" tab="report" />} />
         </Route>
 
-        {/* Profile routes */}
+        {/* Profile routes - integrated into role-specific layout */}
         <Route
-          path="/profile"
+          path="/profile/*"
           element={
             <ProtectedRoute>
-              <UserProfile />
+              <DashboardRouter />
             </ProtectedRoute>
           }
         />

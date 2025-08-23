@@ -2,361 +2,308 @@
  * Profile Completion Wizard
  * 
  * Multi-step wizard for completing user profile after registration.
- * Adapts form steps based on user role (DOM/SUB/OBSERVER).
+ * Adapts form steps based on user role (DOM/SUB).
  * 
  * @component ProfileCompletionWizard
  * @author Underneath Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CheckCircle, User, Settings, MessageCircle, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProfileService, ProfileResponse } from '@/services/profileService';
 import { useAuthStore } from '@/store/useAuthStore';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import NotificationService from '@/services/notificationService';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { BasicInfoStep } from './steps/BasicInfoStep';
-import { PreferencesStep } from './steps/PreferencesStep';
-import { CommunicationStep } from './steps/CommunicationStep';
-import { RoleSpecificStep } from './steps/RoleSpecificStep';
-
-interface WizardStep {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  component: React.ComponentType<any>;
-  required: boolean;
-}
+import { completeDomRegistrationSteps } from './forms/CompleteDomRegistration';
+import { completeSubRegistrationSteps } from './forms/CompleteSubRegistration';
+import { FormProgress } from './FormProgress';
 
 export default function ProfileCompletionWizard() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [profileData, setProfileData] = useState<any>({});
+  const [formData, setFormData] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [profileResponse, setProfileResponse] = useState<ProfileResponse | null>(null);
   
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const navigate = useNavigate();
 
-  // Get role-specific steps configuration
-  const getSteps = (role: string): WizardStep[] => {
-    const baseSteps: WizardStep[] = [
-      {
-        id: 'basic_info',
-        title: 'Grundinformationen',
-        description: 'Wie möchten Sie angesprochen werden?',
-        icon: User,
-        component: BasicInfoStep,
-        required: true,
-      },
-      {
-        id: 'preferences',
-        title: 'Präferenzen',
-        description: 'Ihre persönlichen Einstellungen',
-        icon: Settings,
-        component: PreferencesStep,
-        required: true,
-      },
-      {
-        id: 'communication',
-        title: 'Kommunikation',
-        description: 'Wie möchten Sie kontaktiert werden?',
-        icon: MessageCircle,
-        component: CommunicationStep,
-        required: true,
-      },
-    ];
-
-    // Add role-specific step
-    const roleSpecificStep: WizardStep = {
-      id: role === 'DOM' ? 'leadership_style' : role === 'SUB' ? 'goals_boundaries' : 'professional_info',
-      title: role === 'DOM' ? 'Führungsstil' : role === 'SUB' ? 'Ziele & Grenzen' : 'Professionelle Informationen',
-      description: role === 'DOM' ? 'Ihr Führungsansatz' : role === 'SUB' ? 'Was möchten Sie erreichen?' : 'Ihre Rolle und Expertise',
-      icon: Target,
-      component: RoleSpecificStep,
-      required: true,
-    };
-
-    return [...baseSteps, roleSpecificStep];
-  };
-
-  const steps = user ? getSteps(user.role) : [];
-  const progress = steps.length > 0 ? ((currentStep + 1) / steps.length) * 100 : 0;
+  // Get role-specific steps
+  const steps = user?.role === 'DOM' ? completeDomRegistrationSteps : completeSubRegistrationSteps;
+  const totalSteps = steps.length;
+  const stepTitles = steps.map(step => step.title);
 
   useEffect(() => {
-    if (user && !profileResponse) {
-      loadProfile();
-    }
-  }, [user]); // Only depend on user
-
-  const loadProfile = async () => {
-    if (initialLoading) return; // Prevent double loading
+    let isMounted = true;
     
-    setInitialLoading(true);
-    try {
-      const response = await ProfileService.getProfile();
-      setProfileResponse(response);
+    if (user?.id && !profileResponse && !initialLoading) {
+      console.log('Loading profile for user:', user.email);
       
-      // Pre-fill form data if profile exists
-      if (!response.isNewProfile && response.profile) {
-        setProfileData({
-          preferredName: response.profile.preferredName || '',
-          experienceLevel: response.profile.experienceLevel || '',
-          availability: response.profile.availability || {},
-          preferences: response.profile.preferences || {},
-          goals: response.profile.goals || '',
-          boundaries: response.profile.boundaries || {},
-          communication: response.profile.communication || {},
-        });
-
-        // Set current step based on completed steps
-        const completedSteps = response.profile.completedSteps || [];
-        const nextStepIndex = steps.findIndex(step => !completedSteps.includes(step.id));
-        if (nextStepIndex > 0) {
-          setCurrentStep(nextStepIndex);
+      // Start loading immediately
+      loadProfileSafe(isMounted);
+      
+      // Emergency fallback after 3 seconds (increased timeout)
+      const emergencyTimeout = setTimeout(() => {
+        if (isMounted && !profileResponse) {
+          console.log('Emergency timeout - forcing fallback profile creation');
+          createFallbackProfile();
+        }
+      }, 3000);
+      
+      return () => {
+        isMounted = false;
+        clearTimeout(emergencyTimeout);
+      };
+    }
+  }, [user?.id, profileResponse, initialLoading]);
+  
+  const loadProfileSafe = async (isMounted: boolean) => {
+    if (!isMounted) return;
+    
+    try {
+      console.log('Attempting to fetch profile...');
+      const response = await ProfileService.getProfile();
+      
+      if (isMounted) {
+        console.log('Profile response received:', response);
+        setProfileResponse(response);
+        setInitialLoading(false);
+        
+        // Pre-fill form data if profile exists
+        if (!response.isNewProfile && response.profile?.data) {
+          setFormData(response.profile.data);
         }
       }
-    } catch (error: any) {
-      console.error('Error loading profile:', error);
-      const errorMessage = ProfileService.getErrorMessage(error);
-      toast.error(`Fehler beim Laden des Profils: ${errorMessage}`);
-      
-      // If auth error, redirect to login
-      if (error.response?.status === 401) {
-        navigate('/login');
-        return;
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      if (isMounted) {
+        createFallbackProfile();
       }
-    } finally {
-      setInitialLoading(false);
     }
   };
 
-  const handleNext = async () => {
-    if (currentStep < steps.length - 1) {
-      await saveCurrentStep();
-      setCurrentStep(currentStep + 1);
+  const createFallbackProfile = () => {
+    console.log('Creating fallback profile...');
+    setProfileResponse({
+      user: {
+        id: user?.id || '',
+        email: user?.email || '',
+        role: user?.role || '',
+        displayName: user?.displayName,
+        profileCompleted: false
+      },
+      isNewProfile: true,
+      profile: null,
+      isComplete: false,
+      progress: 0
+    });
+    setInitialLoading(false);
+  };
+
+  const updateFormData = (newData: Partial<any>) => {
+    setFormData((prev: any) => ({ ...prev, ...newData }));
+  };
+
+  const handleNext = () => {
+    if (currentStep < totalSteps - 1) {
+      setCurrentStep(prev => prev + 1);
     } else {
-      await completeProfile();
+      handleComplete();
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrev = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
-  const saveCurrentStep = async () => {
+  const handleComplete = async () => {
     setLoading(true);
+    
     try {
-      const currentStepData = {
-        ...profileData,
-        stepCompleted: steps[currentStep].id,
+      console.log('Completing profile with data:', formData);
+      
+      // Update profile with comprehensive data
+      const profileData = {
+        preferredName: formData.firstName || '',
+        data: formData,
+        experienceLevel: formData.bdsmExperience || 'beginner',
+        availability: {
+          days: formData.availableDays || [],
+          timePreference: formData.timePreference || 'flexible',
+          frequency: formData.sessionFrequency || 'weekly'
+        },
+        preferences: {
+          communication: formData.communicationStyles || [],
+          activities: formData.preferredActivities || formData.interests || [],
+          relationshipType: formData.relationshipType || 'undecided'
+        },
+        goals: formData.personalGoals?.join(', ') || formData.learningInterests || '',
+        boundaries: {
+          hardLimits: formData.hardLimits || '',
+          softLimits: formData.softLimits || '',
+          healthNotes: formData.healthNotes || ''
+        },
+        communication: {
+          style: formData.communicationStyles || [],
+          frequency: 'regular',
+          channels: ['app']
+        }
       };
 
-      await ProfileService.updateProfile(currentStepData);
-      toast.success('Schritt gespeichert');
-    } catch (error: any) {
-      console.error('Error saving step:', error);
-      const errorMessage = ProfileService.getErrorMessage(error);
-      toast.error(`Fehler beim Speichern: ${errorMessage}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const completeProfile = async () => {
-    setLoading(true);
-    try {
-      // Save final step
-      await ProfileService.updateProfile({
-        ...profileData,
-        stepCompleted: steps[currentStep].id,
-      });
-
-      // Mark profile as complete
-      const result = await ProfileService.completeProfile();
+      const response = await ProfileService.updateProfile(profileData);
       
-      if (result.isComplete) {
-        toast.success('Profil erfolgreich vervollständigt!');
-        // Redirect to appropriate dashboard based on role
-        const dashboardPath = user?.role === 'DOM' ? '/dashboard/overview' : 
-                              user?.role === 'SUB' ? '/sub/dashboard' : 
-                              '/dashboard/overview';
-        navigate(dashboardPath);
-      } else {
-        toast.error('Profil konnte nicht als vollständig markiert werden. Bitte überprüfen Sie alle Angaben.');
+      if (response) {
+        console.log('Profile updated successfully');
+        
+        // Update user status
+        if (user) {
+          updateUser({ ...user, profileCompleted: true });
+        }
+
+        // Send sequential push notifications
+        console.log('Sending sequential notifications...');
+        
+        // 1. Erste Push-Nachricht: Profil erfolgreich vervollständigt
+        setTimeout(() => {
+          console.log('Sending first notification: Profile completed');
+          NotificationService.showNotification({
+            title: 'Profil erfolgreich vervollständigt',
+            body: 'Alle Schritte wurden abgeschlossen.',
+            type: 'success'
+          });
+        }, 500);
+        
+        // 2. Zweite Push-Nachricht: Willkommen
+        setTimeout(() => {
+          console.log('Sending second notification: Welcome');
+          NotificationService.sendProfileCompletedNotification();
+        }, 1500);
+        
+        // 3. Dritte Push-Nachricht: Navigation
+        setTimeout(() => {
+          console.log('Sending third notification: Navigation');
+          NotificationService.showNotification({
+            title: 'Weiterleitung zum Dashboard',
+            body: 'Sie werden automatisch weitergeleitet...',
+            url: '/dashboard/direct',
+            type: 'navigation'
+          });
+        }, 2500);
+
+        // Navigate after notifications
+        setTimeout(() => {
+          console.log('Navigating to dashboard...');
+          navigate('/dashboard/direct');
+        }, 3500);
       }
-    } catch (error: any) {
-      console.error('Error completing profile:', error);
-      const errorMessage = ProfileService.getErrorMessage(error);
-      toast.error(`Fehler beim Abschließen: ${errorMessage}`);
+      
+    } catch (error) {
+      console.error('Failed to complete profile:', error);
+      toast.error('Fehler beim Speichern des Profils');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateProfileData = (data: any) => {
-    setProfileData((prev: any) => ({ ...prev, ...data }));
+  const handleSkip = () => {
+    console.log('User chose to skip profile completion');
+    navigate('/dashboard/overview?skip_onboarding=true');
   };
 
+  // Loading state
   if (initialLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="py-8">
-            <div className="text-center space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="text-sm text-muted-foreground">Lade Profildaten...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Lade Profildaten...</p>
+          
+          {/* Emergency escape buttons */}
+          <div className="space-y-2 mt-8">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/dashboard/direct')}
+              className="block mx-auto"
+            >
+              🚨 Notfall-Weiterleitung
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/escape')}
+              className="block mx-auto text-xs"
+            >
+              Alternative Route
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!user || steps.length === 0) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="py-8">
-            <div className="text-center space-y-4">
-              <p className="text-sm text-muted-foreground">Fehler beim Laden der Profil-Konfiguration.</p>
-              <Button onClick={() => navigate('/login')}>
-                Zur Anmeldung
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const currentStepConfig = steps[currentStep];
-  const StepComponent = currentStepConfig.component;
+  // Main wizard content
+  const CurrentStepComponent = steps[currentStep]?.component;
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-2">Profil vervollständigen</h1>
-          <p className="text-muted-foreground">
-            Willkommen bei Underneath! Helfen Sie uns, Ihre Erfahrung zu personalisieren.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Progress indicator */}
+        <FormProgress 
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          stepTitles={stepTitles}
+          userRole={user?.role as 'DOM' | 'SUB'}
+        />
 
-        {/* Progress */}
-        <Card className="mb-6">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{user.role}</Badge>
-                <span className="text-sm text-muted-foreground">
-                  Schritt {currentStep + 1} von {steps.length}
-                </span>
-              </div>
-              <span className="text-sm font-medium">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </CardContent>
-        </Card>
+        {/* Current step */}
+        {CurrentStepComponent && (
+          <CurrentStepComponent
+            formData={formData}
+            updateFormData={updateFormData}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            isFirst={currentStep === 0}
+            isLast={currentStep === totalSteps - 1}
+          />
+        )}
 
-        {/* Step Navigation */}
-        <div className="flex items-center justify-between mb-6 overflow-x-auto">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isCompleted = index < currentStep;
-            const isCurrent = index === currentStep;
-            
-            return (
-              <div key={step.id} className="flex items-center">
-                <div className={`
-                  flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-                  ${isCompleted ? 'bg-primary border-primary text-primary-foreground' : 
-                    isCurrent ? 'border-primary text-primary' : 'border-muted text-muted-foreground'}
-                `}>
-                  {isCompleted ? (
-                    <CheckCircle className="h-5 w-5" />
-                  ) : (
-                    <Icon className="h-5 w-5" />
-                  )}
-                </div>
-                {index < steps.length - 1 && (
-                  <Separator className="w-8 mx-2" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Current Step */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <currentStepConfig.icon className="h-5 w-5" />
-              {currentStepConfig.title}
-            </CardTitle>
-            <CardDescription>
-              {currentStepConfig.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StepComponent
-              data={profileData}
-              onChange={updateProfileData}
-              userRole={user.role}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 0}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Zurück
-          </Button>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Save current progress and allow access to dashboard
-                const dashboardPath = user?.role === 'DOM' ? '/dashboard/overview?skip_onboarding=true' : 
-                                      user?.role === 'SUB' ? '/sub/dashboard?skip_onboarding=true' : 
-                                      '/dashboard/overview?skip_onboarding=true';
-                navigate(dashboardPath);
-              }}
+        {/* Skip option for first step */}
+        {currentStep === 0 && (
+          <div className="text-center mt-6">
+            <Button 
+              variant="ghost" 
+              onClick={handleSkip}
+              disabled={loading}
             >
               Später vervollständigen
             </Button>
-            
-            <Button
-              onClick={handleNext}
-              disabled={loading}
+          </div>
+        )}
+
+        {/* Emergency buttons */}
+        <div className="text-center mt-8 space-y-2">
+          <div className="text-xs text-muted-foreground">
+            Probleme? Nutzen Sie die Notfall-Optionen:
+          </div>
+          <div className="space-x-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/dashboard/direct')}
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
-              ) : currentStep === steps.length - 1 ? null : (
-                <ChevronRight className="h-4 w-4 ml-2" />
-              )}
-              {currentStep === steps.length - 1 ? 'Profil abschließen' : 'Weiter'}
+              Direkt zum Dashboard
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/escape')}
+            >
+              Alternative Route
             </Button>
           </div>
         </div>

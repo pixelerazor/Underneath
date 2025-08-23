@@ -93,10 +93,11 @@ export default function UserProfile() {
 
   return (
     <div className="space-y-6">
-      {/* Profile Overview (default view) */}
-      {!showDetailed && !showConnections && !showSecurity && (
-        <div className="space-y-6">
-          {/* Basic Information */}
+
+        {/* Profile Overview (default view) */}
+        {!showDetailed && !showConnections && !showSecurity && (
+          <div className="space-y-6">
+            {/* Basic Information */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -213,58 +214,59 @@ export default function UserProfile() {
               <ProfileOverview shouldLoad={!showDetailed && !showConnections && !showSecurity} />
             </CardContent>
           </Card>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Comprehensive Profile Tab */}
-      {showDetailed && (
-        <div id="detailed">
-          <ComprehensiveProfileEditor />
-        </div>
-      )}
+        {/* Comprehensive Profile Tab */}
+        {showDetailed && (
+          <div id="detailed">
+            <ComprehensiveProfileEditor />
+          </div>
+        )}
 
-      {/* Connections Tab */}
-      {showConnections && (
-        <div id="connections">
-          <ConnectionManagement />
-        </div>
-      )}
+        {/* Connections Tab */}
+        {showConnections && (
+          <div id="connections">
+            <ConnectionManagement />
+          </div>
+        )}
 
-      {/* Security Tab */}
-      {showSecurity && (
-        <div id="security" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Sicherheitseinstellungen
-              </CardTitle>
-              <CardDescription>
-                Verwalten Sie Passwort und Sicherheitsoptionen
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  🔒 <strong>Sicherheitsfeatures kommen bald:</strong>
-                </p>
-                <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
-                  <li>• Passwort ändern</li>
-                  <li>• Zwei-Faktor-Authentifizierung</li>
-                  <li>• Login-Verlauf einsehen</li>
-                  <li>• Aktive Sitzungen verwalten</li>
-                </ul>
-              </div>
-              
-              <div className="text-center pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Diese Funktionen werden in einer zukünftigen Version verfügbar sein.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        {/* Security Tab */}
+        {showSecurity && (
+          <div id="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Sicherheitseinstellungen
+                </CardTitle>
+                <CardDescription>
+                  Verwalten Sie Passwort und Sicherheitsoptionen
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    🔒 <strong>Sicherheitsfeatures kommen bald:</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1">
+                    <li>• Passwort ändern</li>
+                    <li>• Zwei-Faktor-Authentifizierung</li>
+                    <li>• Login-Verlauf einsehen</li>
+                    <li>• Aktive Sitzungen verwalten</li>
+                  </ul>
+                </div>
+                
+                <div className="text-center pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Diese Funktionen werden in einer zukünftigen Version verfügbar sein.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

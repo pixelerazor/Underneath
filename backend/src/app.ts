@@ -6,6 +6,9 @@ import compression from 'compression';
 import { rateLimit } from 'express-rate-limit';
 import { authenticateToken } from './middleware/auth';
 import invitationRoutes from './routes/invitationRoutes';
+import authRoutes from './routes/authRoutes';
+import profileRoutes from './routes/profile';
+import pushRoutes from './routes/pushRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -32,6 +35,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/push', pushRoutes);
 app.use('/api/invitations', authenticateToken, invitationRoutes);
 
 // Error Handling

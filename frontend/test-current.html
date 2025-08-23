@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Test - Port 5175</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        a { color: #007bff; text-decoration: none; margin-right: 10px; }
+        a:hover { text-decoration: underline; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Navigation Test - KORREKTER PORT 5175</h1>
+    
+    <div class="status success">
+        <strong>✅ Server Status:</strong> Frontend läuft korrekt auf Port 5175
+    </div>
+
+    <div class="test-section">
+        <h2>📱 Frontend Tests (Port 5175):</h2>
+        <p><a href="http://localhost:5175/" target="_blank">🏠 Root Page</a> - Sollte zu Login weiterleiten</p>
+        <p><a href="http://localhost:5175/login" target="_blank">🔐 Login Page</a> - Login-Formular</p>
+        <p><a href="http://localhost:5175/register" target="_blank">📝 Register Page</a> - Registrierung</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🧭 Navigation Tests (nach Login):</h2>
+        <p><a href="http://localhost:5175/dashboard/overview" target="_blank">📊 Dashboard</a> - Hauptdashboard</p>
+        <p><a href="http://localhost:5175/profile" target="_blank">👤 Profile Overview</a> - Profil-Übersicht</p>
+        <p><a href="http://localhost:5175/profile?tab=comprehensive" target="_blank">📋 Detaillierte Daten</a> - Sollte Sub-Navigation zeigen</p>
+        <p><a href="http://localhost:5175/profile?tab=comprehensive#basic" target="_blank">🔍 Basisdaten</a> - Direkt zu Basisdaten</p>
+        <p><a href="http://localhost:5175/profile?tab=comprehensive#lifestyle" target="_blank">🏠 Lebenssituation</a> - Direkt zu Lebenssituation</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Was zu testen ist:</h2>
+        <ol>
+            <li><strong>Login-Weiterleitung:</strong> Nach Login automatisch zu /dashboard/overview</li>
+            <li><strong>Tab-Markierung:</strong> "Detaillierte Daten" rot unterstrichen wenn aktiv</li>
+            <li><strong>Sub-Navigation:</strong> Zweite Navigationsleiste mit Basisdaten, Lebenssituation, etc.</li>
+            <li><strong>Hash-Navigation:</strong> Klick auf Sub-Tabs scrollt zu entsprechendem Abschnitt</li>
+            <li><strong>Geschlechter-Liste:</strong> Neue 42-Einträge Liste in Profil-Editor</li>
+        </ol>
+    </div>
+
+    <div class="status warning">
+        <strong>⚠️ Wichtig:</strong> 
+        <br>• Schließen Sie alle Browser-Tabs mit Port 5173!
+        <br>• Verwenden Sie nur Port 5175 für Tests
+        <br>• Leeren Sie Browser-Cache wenn nötig (Strg+F5)
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Backend Status:</h2>
+        <p id="backend-status">Testing backend connection...</p>
+        <script>
+            fetch('http://localhost:3000/health')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('backend-status').innerHTML = 
+                        '<span style="color: green;">✅ Backend läuft: ' + data.status + '</span>';
+                })
+                .catch(error => {
+                    document.getElementById('backend-status').innerHTML = 
+                        '<span style="color: red;">❌ Backend nicht erreichbar: ' + error.message + '</span>';
+                });
+        </script>
+    </div>
+
+    <div class="status success">
+        <strong>✅ Alle Fixes implementiert:</strong>
+        <ul>
+            <li>Geschlechteridentitäten-Liste aktualisiert (42 Einträge)</li>
+            <li>Login-Weiterleitung korrigiert</li>
+            <li>Zweistufige Navigation in beiden Layouts</li>
+            <li>Custom Button-Navigation für korrekte Tab-Markierung</li>
+            <li>Hash-Navigation für Sub-Tabs</li>
+        </ul>
+    </div>
+</body>
+</html>

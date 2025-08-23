@@ -9,10 +9,7 @@
  * @version 1.0.0
  */
 
-import axios from 'axios';
-import { useAuthStore } from '../store/useAuthStore';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { apiClient } from './apiClient';
 
 // Types for connection data
 export interface ConnectionPartner {
@@ -41,19 +38,6 @@ export interface ConnectionAvailability {
   currentConnection: Connection | null;
 }
 
-/**
- * Create axios instance with authentication
- */
-const getAuthenticatedAxios = () => {
-  const { accessToken } = useAuthStore.getState();
-  return axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-};
 
 /**
  * Connection Service Class
@@ -68,8 +52,7 @@ export class ConnectionService {
    */
   static async getMyConnection(): Promise<ConnectionResponse> {
     try {
-      const api = getAuthenticatedAxios();
-      const response = await api.get('/api/connections/my-connection');
+      const response = await apiClient.get('/connections/my-connection');
       return response.data;
     } catch (error: any) {
       console.error('Error fetching connection:', error);
@@ -87,8 +70,7 @@ export class ConnectionService {
    */
   static async terminateMyConnection(): Promise<any> {
     try {
-      const api = getAuthenticatedAxios();
-      const response = await api.post('/api/connections/terminate');
+      const response = await apiClient.post('/connections/terminate');
       return response.data;
     } catch (error: any) {
       console.error('Error terminating connection:', error);
@@ -106,8 +88,7 @@ export class ConnectionService {
    */
   static async checkConnectionAvailability(): Promise<ConnectionAvailability> {
     try {
-      const api = getAuthenticatedAxios();
-      const response = await api.get('/api/connections/availability');
+      const response = await apiClient.get('/connections/availability');
       return response.data;
     } catch (error: any) {
       console.error('Error checking connection availability:', error);
