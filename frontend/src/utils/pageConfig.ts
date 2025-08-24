@@ -39,6 +39,61 @@ export const PAGE_SECTIONS: Record<string, PageSection> = {
       { id: 'activities', label: 'Aktivitäten', path: '/dashboard/activities' },
     ],
   },
+  education: {
+    id: 'education',
+    label: 'Stufenplan der Erziehung',
+    title: 'Stufenplan der Erziehung',
+    tabs: [
+      { 
+        id: 'stufenplan', 
+        label: 'Stufenplan', 
+        path: '/education/stufenplan',
+        subTabs: [
+          { id: 'initiationsriten', label: 'Initiationsriten', path: '/education/stufenplan#initiationsriten' },
+          { id: 'privilegien', label: 'Privilegien', path: '/education/stufenplan#privilegien' },
+          { id: 'gaben', label: 'Gaben', path: '/education/stufenplan#gaben' },
+          { id: 'strafen', label: 'Strafen', path: '/education/stufenplan#strafen' },
+          { id: 'tpe', label: 'TPE', path: '/education/stufenplan#tpe' },
+        ]
+      },
+      { id: 'werte', label: 'Werte', path: '/education/werte' },
+      { id: 'ziele', label: 'Ziele', path: '/education/ziele' },
+      { id: 'regeln', label: 'Regeln', path: '/education/regeln' },
+      { id: 'routinen', label: 'Routinen', path: '/education/routinen' },
+      { id: 'aufgaben', label: 'Aufgaben', path: '/education/aufgaben' },
+    ],
+  },
+  control: {
+    id: 'control',
+    label: 'Kontrolle & Überwachung',
+    title: 'Kontrolle & Überwachung',
+    tabs: [
+      { id: 'keuschheit', label: 'Keuschheit', path: '/control/keuschheit' },
+      { id: 'koerper', label: 'Körper', path: '/control/koerper' },
+      { id: 'geist', label: 'Geist', path: '/control/geist' },
+      { id: 'ortung', label: 'Ortung', path: '/control/ortung' },
+    ],
+  },
+  journal: {
+    id: 'journal',
+    label: 'Tagebuch & Dokumente',
+    title: 'Tagebuch & Dokumente',
+    tabs: [
+      { id: 'erkenntnisse', label: 'Neue Erkenntnisse', path: '/journal/erkenntnisse' },
+      { id: 'informationen', label: 'Allgemeine Informationen', path: '/journal/informationen' },
+      { id: 'rueckfaelle', label: 'Rückfälle', path: '/journal/rueckfaelle' },
+      { id: 'faq', label: 'FAQ', path: '/journal/faq' },
+      { id: 'trigger', label: 'Trigger', path: '/journal/trigger' },
+    ],
+  },
+  calendar: {
+    id: 'calendar',
+    label: 'Kalender',
+    title: 'Kalender',
+    tabs: [
+      { id: 'overview', label: 'Übersicht', path: '/calendar/overview' },
+    ],
+  },
   tasks: {
     id: 'tasks',
     label: 'Aufgaben',
@@ -100,8 +155,8 @@ export const PAGE_SECTIONS: Record<string, PageSection> = {
         subTabs: [
           { id: 'basic', label: 'Basisdaten', path: '/profile?tab=comprehensive#basic' },
           { id: 'lifestyle', label: 'Lebenssituation', path: '/profile?tab=comprehensive#lifestyle' },
-          { id: 'bdsm', label: 'BDSM & Grenzen', path: '/profile?tab=comprehensive#bdsm' },
-          { id: 'role', label: 'Role-Spezifisch', path: '/profile?tab=comprehensive#role' },
+          { id: 'bdsm', label: 'Grenzen & Sicherheit', path: '/profile?tab=comprehensive#bdsm' },
+          { id: 'role', label: 'Rollen-Spezifisch', path: '/profile?tab=comprehensive#role' },
         ]
       },
       { id: 'connections', label: 'Verbindungen', path: '/profile?tab=connections' },
@@ -121,6 +176,10 @@ export function getPageConfigByPath(pathname: string, search?: string): {
   // Determine section
   let sectionId = 'dashboard'; // default
   if (pathname.includes('/tasks')) sectionId = 'tasks';
+  else if (pathname.includes('/education')) sectionId = 'education';
+  else if (pathname.includes('/control')) sectionId = 'control';
+  else if (pathname.includes('/journal')) sectionId = 'journal';
+  else if (pathname.includes('/calendar')) sectionId = 'calendar';
   else if (pathname.includes('/rules')) sectionId = 'rules';
   else if (pathname.includes('/rewards')) sectionId = 'rewards';
   else if (pathname.includes('/punishments')) sectionId = 'punishments';

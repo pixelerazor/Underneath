@@ -16,6 +16,7 @@ import { useConnectionStore } from '@/store/useConnectionStore';
 import { WelcomeScreen } from '@/components/dom/WelcomeScreen';
 import UserProfile from '@/components/profile/UserProfile';
 import { PAGE_SECTIONS, getPageConfigByPath, getPageTitle } from '@/utils/pageConfig';
+import { FloatingActionMenu } from '@/components/fab/FloatingActionMenu';
 import { cn } from '@/lib/utils';
 
 
@@ -90,84 +91,77 @@ export function DomLayout() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Bar */}
       <header className="sticky top-0 z-50 w-full border-b bg-background">
-        <div className="flex h-14 items-center justify-between px-4">
+        <div className="flex h-14 items-center px-4 relative">
           {/* Hamburger Menu */}
-          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <SheetHeader>
-                <SheetTitle>Navigation</SheetTitle>
-              </SheetHeader>
-              <nav className="mt-6 space-y-1">
-                {Object.entries(PAGE_SECTIONS).map(([key, section]) => (
-                  <button
-                    key={key}
-                    onClick={() => handleSectionChange(key)}
-                    className={cn(
-                      'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
-                      currentSection?.id === key ? 'bg-secondary' : 'hover:bg-secondary/50'
-                    )}
-                  >
-                    {section.label}
-                  </button>
-                ))}
-                
-                {/* Profile & Logout Section */}
-                <div className="border-t pt-4 mt-6">
-                  <button
-                    onClick={() => {
-                      navigate('/profile');
-                      setSidebarOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-secondary/50 flex items-center gap-2"
-                  >
-                    <User className="h-4 w-4" />
-                    Profil
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-destructive/10 text-destructive flex items-center gap-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Abmelden
-                  </button>
-                </div>
-              </nav>
-            </SheetContent>
-          </Sheet>
+          <div className="absolute left-4">
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="hover:bg-primary/10 hover:text-primary">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <SheetHeader>
+                  <SheetTitle>Navigation</SheetTitle>
+                </SheetHeader>
+                <nav className="mt-6 space-y-1">
+                  {Object.entries(PAGE_SECTIONS)
+                    .filter(([key]) => !['tasks', 'rules', 'rewards', 'punishments', 'profile'].includes(key))
+                    .map(([key, section]) => (
+                      <button
+                        key={key}
+                        onClick={() => handleSectionChange(key)}
+                        className={cn(
+                          'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
+                          currentSection?.id === key ? 'bg-primary/10 text-primary' : 'hover:bg-primary/10 hover:text-primary'
+                        )}
+                      >
+                        {section.label}
+                      </button>
+                    ))}
+                  
+                  {/* Profile & Logout Section */}
+                  <div className="border-t pt-4 mt-6">
+                    <button
+                      onClick={() => {
+                        navigate('/profile');
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-primary/10 hover:text-primary flex items-center gap-2"
+                    >
+                      <User className="h-4 w-4" />
+                      Profil
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/settings');
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-primary/10 hover:text-primary flex items-center gap-2"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Einstellungen
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-destructive/10 text-destructive flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Abmelden
+                    </button>
+                  </div>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
 
-          {/* Center: Page Title */}
-          <div className="flex items-center gap-2">
+          {/* Centered Page Title */}
+          <div className="flex-1 flex items-center justify-center">
             <span className="text-lg font-semibold">{pageTitle}</span>
           </div>
 
-          {/* Profile Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Settings className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                Profil
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handlePlusClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                Neu erstellen
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Abmelden
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Right placeholder for symmetry */}
+          <div className="absolute right-4 w-10"></div>
         </div>
 
         {/* Main Tab Bar */}
@@ -180,12 +174,12 @@ export function DomLayout() {
                 navigate(tab.path);
               }
             }}>
-              <TabsList className="inline-flex h-10 rounded-none bg-transparent w-full justify-start">
+              <TabsList className="inline-flex h-10 rounded-none bg-transparent w-full justify-center min-h-[44px]">
                 {currentSection.tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:border-transparent data-[state=active]:shadow-none"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:border-transparent data-[state=active]:shadow-none min-h-[44px] px-4"
                   >
                     {tab.label}
                   </TabsTrigger>
@@ -195,32 +189,36 @@ export function DomLayout() {
           </div>
         )}
 
-        {/* Sub Tab Bar (for detailed sections like profile editing) */}
-        {currentTab?.subTabs && (
-          <div className="border-t bg-muted/20 overflow-x-auto">
-            <div className="inline-flex h-9 items-center w-full px-2">
-              {currentTab.subTabs.map((subTab) => (
-                <button
-                  key={subTab.id}
-                  onClick={() => {
-                    console.log('DomLayout: Sub-tab clicked:', subTab.id);
-                    // Only use navigate - this will trigger hash change naturally
-                    navigate(`/profile?tab=comprehensive#${subTab.id}`);
-                    console.log('DomLayout: Navigated to:', `/profile?tab=comprehensive#${subTab.id}`);
-                  }}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded transition-colors',
-                    currentSubTab?.id === subTab.id || window.location.hash === `#${subTab.id}`
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  {subTab.label}
-                </button>
-              ))}
+        {/* Sub Tab Bar - same design as main tab bar */}
+        {currentSection && currentSection.tabs.some(tab => tab.subTabs) && (() => {
+          // Always show sub-tabs for sections that have them (education, profile)
+          const tabWithSubTabs = currentSection.tabs.find(tab => tab.subTabs);
+          if (!tabWithSubTabs?.subTabs) return null;
+          
+          return (
+            <div className="border-t overflow-x-auto">
+              <Tabs value={currentSubTab?.id || ''} onValueChange={(value) => {
+                const subTab = tabWithSubTabs.subTabs?.find(t => t.id === value);
+                if (subTab) {
+                  console.log('Navigating to sub-tab:', subTab.path);
+                  navigate(subTab.path);
+                }
+              }}>
+                <TabsList className="inline-flex h-10 rounded-none bg-transparent w-full justify-center min-h-[44px]">
+                  {tabWithSubTabs.subTabs.map((subTab) => (
+                    <TabsTrigger
+                      key={subTab.id}
+                      value={subTab.id}
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-b-primary data-[state=active]:border-transparent data-[state=active]:shadow-none min-h-[44px] px-4"
+                    >
+                      {subTab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </header>
 
       {/* Main Content */}
@@ -231,26 +229,11 @@ export function DomLayout() {
       {/* Bottom Bar */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t">
         {connectedSub ? (
-          <div className="flex items-center justify-between px-4 h-14">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-primary" />
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground">Stufe {connectedSub.level}</span>
-                <span className="text-xs font-medium">{connectedSub.levelTitle}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Underneath:</span>
-              <span className="text-sm font-semibold">{connectedSub.name}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Award className="h-4 w-4 text-primary" />
-              <div className="flex flex-col items-end">
-                <span className="text-xs text-muted-foreground">Punkte</span>
-                <span className="text-xs font-medium">
-                  {connectedSub.points}/{connectedSub.maxPoints}
-                </span>
-              </div>
+          <div className="flex items-center justify-center px-4 h-14">
+            <div className="flex flex-col items-center">
+              <span className="text-red-600 font-bold text-sm">[UNDERNEATH]</span>
+              <div className="w-16 h-0.5 bg-red-600 my-1"></div>
+              <span className="text-xs text-muted-foreground">{connectedSub.name}</span>
             </div>
           </div>
         ) : (
@@ -259,6 +242,9 @@ export function DomLayout() {
           </div>
         )}
       </footer>
+
+      {/* Floating Action Menu */}
+      <FloatingActionMenu />
     </div>
   );
 }

@@ -22,6 +22,12 @@ import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProfileData {
   [key: string]: any;
@@ -163,18 +169,71 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="age">Alter</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min="18"
-                    max="100"
-                    value={profileData.age || ''}
-                    onChange={(e) => updateProfileData({ age: parseInt(e.target.value) })}
-                  />
+                  <Label>Geburtsdatum</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !profileData.birthDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {profileData.birthDate ? (
+                          format(new Date(profileData.birthDate), "dd.MM.yyyy", { locale: de })
+                        ) : (
+                          "Geburtsdatum wählen"
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={profileData.birthDate ? new Date(profileData.birthDate) : undefined}
+                        onSelect={(date) => updateProfileData({ birthDate: date?.toISOString() })}
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
+                <div>
+                  <Label htmlFor="religion">Religion</Label>
+                  <Select value={profileData.religion || ''} onValueChange={(value) => updateProfileData({ religion: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Religion (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="keine">Keine / Atheismus</SelectItem>
+                      <SelectItem value="agnostizismus">Agnostizismus</SelectItem>
+                      <SelectItem value="alevitentum">Alevitentum</SelectItem>
+                      <SelectItem value="bahaitum">Bahaitum</SelectItem>
+                      <SelectItem value="buddhismus">Buddhismus (z. B. Theravada, Mahayana, Vajrayana)</SelectItem>
+                      <SelectItem value="christentum">Christentum (z. B. Katholizismus, Orthodoxie, Protestantismus, Freikirchen)</SelectItem>
+                      <SelectItem value="daoismus">Daoismus (Taoismus)</SelectItem>
+                      <SelectItem value="druidentum">Druidentum / Neodruidismus</SelectItem>
+                      <SelectItem value="hinduismus">Hinduismus (z. B. Vaishnavismus, Shaivismus, Shaktismus)</SelectItem>
+                      <SelectItem value="islam">Islam (z. B. Sunniten, Schiiten, Ibaditen, Sufismus)</SelectItem>
+                      <SelectItem value="jainismus">Jainismus</SelectItem>
+                      <SelectItem value="judentum">Judentum (z. B. Orthodox, Konservativ, Reformiert, Chassidisch)</SelectItem>
+                      <SelectItem value="konfuzianismus">Konfuzianismus</SelectItem>
+                      <SelectItem value="paganismus">Paganismus (moderne Neuheiden, z. B. Wicca, Ásatrú)</SelectItem>
+                      <SelectItem value="rastafari">Rastafari-Bewegung</SelectItem>
+                      <SelectItem value="schamanismus">Schamanismus (verschiedene indigene Traditionen weltweit)</SelectItem>
+                      <SelectItem value="shinto">Shinto</SelectItem>
+                      <SelectItem value="sikhismus">Sikhismus</SelectItem>
+                      <SelectItem value="spiritismus">Spiritismus</SelectItem>
+                      <SelectItem value="voodoo">Voodoo (z. B. Haitianischer Vodou, Louisiana Voodoo)</SelectItem>
+                      <SelectItem value="zoroastrismus">Zoroastrismus (Parsismus)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="genderIdentity">Geschlechtsidentität</Label>
                   <Select value={profileData.genderIdentity || ''} onValueChange={(value) => updateProfileData({ genderIdentity: value })}>
@@ -243,60 +302,166 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="sexualOrientation">Sexuelle Orientierung</Label>
-                  <Select value={profileData.sexualOrientation || ''} onValueChange={(value) => updateProfileData({ sexualOrientation: value })}>
+                  <Label htmlFor="motherTongue">Muttersprache</Label>
+                  <Select value={profileData.motherTongue || ''} onValueChange={(value) => updateProfileData({ motherTongue: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Orientierung" />
+                      <SelectValue placeholder="Muttersprache" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="heterosexual">Heterosexuell</SelectItem>
-                      <SelectItem value="homosexual">Homosexuell</SelectItem>
-                      <SelectItem value="bisexual">Bisexuell</SelectItem>
-                      <SelectItem value="pansexual">Pansexuell</SelectItem>
-                      <SelectItem value="demisexual">Demisexuell</SelectItem>
-                      <SelectItem value="asexual">Asexuell</SelectItem>
-                      <SelectItem value="other">Andere</SelectItem>
+                      <SelectItem value="arabisch">Arabisch</SelectItem>
+                      <SelectItem value="bulgarisch">Bulgarisch</SelectItem>
+                      <SelectItem value="chinesisch-vereinfacht">Chinesisch vereinfacht</SelectItem>
+                      <SelectItem value="chinesisch-traditionell">Chinesisch traditionell</SelectItem>
+                      <SelectItem value="daenisch">Dänisch</SelectItem>
+                      <SelectItem value="deutsch">Deutsch</SelectItem>
+                      <SelectItem value="englisch">Englisch</SelectItem>
+                      <SelectItem value="estnisch">Estnisch</SelectItem>
+                      <SelectItem value="finnisch">Finnisch</SelectItem>
+                      <SelectItem value="franzoesisch">Französisch</SelectItem>
+                      <SelectItem value="griechisch">Griechisch</SelectItem>
+                      <SelectItem value="hebraeisch">Hebräisch</SelectItem>
+                      <SelectItem value="hindi">Hindi</SelectItem>
+                      <SelectItem value="indonesisch">Indonesisch</SelectItem>
+                      <SelectItem value="italienisch">Italienisch</SelectItem>
+                      <SelectItem value="japanisch">Japanisch</SelectItem>
+                      <SelectItem value="koreanisch">Koreanisch</SelectItem>
+                      <SelectItem value="kroatisch">Kroatisch</SelectItem>
+                      <SelectItem value="lettisch">Lettisch</SelectItem>
+                      <SelectItem value="litauisch">Litauisch</SelectItem>
+                      <SelectItem value="malaiisch">Malaiisch</SelectItem>
+                      <SelectItem value="niederlaendisch">Niederländisch</SelectItem>
+                      <SelectItem value="norwegisch">Norwegisch</SelectItem>
+                      <SelectItem value="polnisch">Polnisch</SelectItem>
+                      <SelectItem value="portugiesisch">Portugiesisch</SelectItem>
+                      <SelectItem value="rumaenisch">Rumänisch</SelectItem>
+                      <SelectItem value="russisch">Russisch</SelectItem>
+                      <SelectItem value="schwedisch">Schwedisch</SelectItem>
+                      <SelectItem value="slowakisch">Slowakisch</SelectItem>
+                      <SelectItem value="slowenisch">Slowenisch</SelectItem>
+                      <SelectItem value="spanisch">Spanisch</SelectItem>
+                      <SelectItem value="thai">Thai</SelectItem>
+                      <SelectItem value="tschechisch">Tschechisch</SelectItem>
+                      <SelectItem value="tuerkisch">Türkisch</SelectItem>
+                      <SelectItem value="ukrainisch">Ukrainisch</SelectItem>
+                      <SelectItem value="ungarisch">Ungarisch</SelectItem>
+                      <SelectItem value="vietnamesisch">Vietnamesisch</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="romanticOrientation">Romantische Orientierung</Label>
-                  <Select value={profileData.romanticOrientation || ''} onValueChange={(value) => updateProfileData({ romanticOrientation: value })}>
+                  <Label htmlFor="secondLanguage">Zweitsprache</Label>
+                  <Select value={profileData.secondLanguage || ''} onValueChange={(value) => updateProfileData({ secondLanguage: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Romantische Orientierung" />
+                      <SelectValue placeholder="Zweitsprache (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="heteroromantic">Heteroromantisch</SelectItem>
-                      <SelectItem value="homoromantic">Homoromantisch</SelectItem>
-                      <SelectItem value="biromantic">Biromantisch</SelectItem>
-                      <SelectItem value="panromantic">Panromantisch</SelectItem>
-                      <SelectItem value="demiromantic">Demiromantisch</SelectItem>
-                      <SelectItem value="aromantic">Aromantisch</SelectItem>
+                      <SelectItem value="keine">Keine</SelectItem>
+                      <SelectItem value="arabisch">Arabisch</SelectItem>
+                      <SelectItem value="bulgarisch">Bulgarisch</SelectItem>
+                      <SelectItem value="chinesisch-vereinfacht">Chinesisch vereinfacht</SelectItem>
+                      <SelectItem value="chinesisch-traditionell">Chinesisch traditionell</SelectItem>
+                      <SelectItem value="daenisch">Dänisch</SelectItem>
+                      <SelectItem value="deutsch">Deutsch</SelectItem>
+                      <SelectItem value="englisch">Englisch</SelectItem>
+                      <SelectItem value="estnisch">Estnisch</SelectItem>
+                      <SelectItem value="finnisch">Finnisch</SelectItem>
+                      <SelectItem value="franzoesisch">Französisch</SelectItem>
+                      <SelectItem value="griechisch">Griechisch</SelectItem>
+                      <SelectItem value="hebraeisch">Hebräisch</SelectItem>
+                      <SelectItem value="hindi">Hindi</SelectItem>
+                      <SelectItem value="indonesisch">Indonesisch</SelectItem>
+                      <SelectItem value="italienisch">Italienisch</SelectItem>
+                      <SelectItem value="japanisch">Japanisch</SelectItem>
+                      <SelectItem value="koreanisch">Koreanisch</SelectItem>
+                      <SelectItem value="kroatisch">Kroatisch</SelectItem>
+                      <SelectItem value="lettisch">Lettisch</SelectItem>
+                      <SelectItem value="litauisch">Litauisch</SelectItem>
+                      <SelectItem value="malaiisch">Malaiisch</SelectItem>
+                      <SelectItem value="niederlaendisch">Niederländisch</SelectItem>
+                      <SelectItem value="norwegisch">Norwegisch</SelectItem>
+                      <SelectItem value="polnisch">Polnisch</SelectItem>
+                      <SelectItem value="portugiesisch">Portugiesisch</SelectItem>
+                      <SelectItem value="rumaenisch">Rumänisch</SelectItem>
+                      <SelectItem value="russisch">Russisch</SelectItem>
+                      <SelectItem value="schwedisch">Schwedisch</SelectItem>
+                      <SelectItem value="slowakisch">Slowakisch</SelectItem>
+                      <SelectItem value="slowenisch">Slowenisch</SelectItem>
+                      <SelectItem value="spanisch">Spanisch</SelectItem>
+                      <SelectItem value="thai">Thai</SelectItem>
+                      <SelectItem value="tschechisch">Tschechisch</SelectItem>
+                      <SelectItem value="tuerkisch">Türkisch</SelectItem>
+                      <SelectItem value="ukrainisch">Ukrainisch</SelectItem>
+                      <SelectItem value="ungarisch">Ungarisch</SelectItem>
+                      <SelectItem value="vietnamesisch">Vietnamesisch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="languageProficiency">Sprachniveau Zweitsprache</Label>
+                  <Select 
+                    value={profileData.languageProficiency || ''} 
+                    onValueChange={(value) => updateProfileData({ languageProficiency: value })}
+                    disabled={!profileData.secondLanguage || profileData.secondLanguage === 'keine'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sprachniveau" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="a1">A1 Anfänger</SelectItem>
+                      <SelectItem value="a2">A2 Grundlegende Kenntnisse</SelectItem>
+                      <SelectItem value="b1">B1 Fortgeschrittene Sprachverwendung</SelectItem>
+                      <SelectItem value="b2">B2 Selbstständige Sprachbeherrschung</SelectItem>
+                      <SelectItem value="c1">C1 Fortgeschrittenes Niveau</SelectItem>
+                      <SelectItem value="c2">C2 Annähernd muttersprachliche Kenntnisse</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="location">Wohnort</Label>
-                  <Input
-                    id="location"
-                    value={profileData.location || ''}
-                    onChange={(e) => updateProfileData({ location: e.target.value })}
-                    placeholder="Stadt, Region"
-                  />
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Adresse</h4>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="col-span-3">
+                    <Label htmlFor="street">Straße</Label>
+                    <Input
+                      id="street"
+                      value={profileData.street || ''}
+                      onChange={(e) => updateProfileData({ street: e.target.value })}
+                      placeholder="Straßenname"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="houseNumber">Hausnummer</Label>
+                    <Input
+                      id="houseNumber"
+                      value={profileData.houseNumber || ''}
+                      onChange={(e) => updateProfileData({ houseNumber: e.target.value })}
+                      placeholder="Nr."
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="languages">Sprachen</Label>
-                  <Input
-                    id="languages"
-                    value={profileData.languages || ''}
-                    onChange={(e) => updateProfileData({ languages: e.target.value })}
-                    placeholder="z.B. Deutsch, Englisch"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="postalCode">Postleitzahl</Label>
+                    <Input
+                      id="postalCode"
+                      value={profileData.postalCode || ''}
+                      onChange={(e) => updateProfileData({ postalCode: e.target.value })}
+                      placeholder="PLZ"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="city">Stadt</Label>
+                    <Input
+                      id="city"
+                      value={profileData.city || ''}
+                      onChange={(e) => updateProfileData({ city: e.target.value })}
+                      placeholder="Stadt"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -304,7 +469,7 @@ export const ComprehensiveProfileEditor: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Persönlichkeit & Werte</CardTitle>
+              <CardTitle>Persönlichkeit</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -322,26 +487,78 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="coreValues">Wichtigste Werte</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {['Authentizität', 'Respekt', 'Autonomie', 'Tiefgang', 'Rationalität', 'Loyalität', 'Ehrlichkeit', 'Kreativität', 'Sicherheit'].map((value) => (
-                    <div key={value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`value-${value}`}
-                        checked={profileData.coreValues?.includes(value) || false}
-                        onCheckedChange={(checked) => {
-                          const values = profileData.coreValues || [];
-                          if (checked) {
-                            updateProfileData({ coreValues: [...values, value] });
-                          } else {
-                            updateProfileData({ coreValues: values.filter((v: string) => v !== value) });
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`value-${value}`} className="text-sm">{value}</Label>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="sexualOrientation">Sexuelle Orientierung</Label>
+                  <Select value={profileData.sexualOrientation || ''} onValueChange={(value) => updateProfileData({ sexualOrientation: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Orientierung" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="asexuell">Asexuell</SelectItem>
+                      <SelectItem value="autosexuell">Autosexuell</SelectItem>
+                      <SelectItem value="androsexuell">Androsexuell</SelectItem>
+                      <SelectItem value="bisexuell">Bisexuell</SelectItem>
+                      <SelectItem value="demisexuell">Demisexuell</SelectItem>
+                      <SelectItem value="grausexuell">Grausexuell</SelectItem>
+                      <SelectItem value="gynosexuell">Gynosexuell</SelectItem>
+                      <SelectItem value="heterosexuell">Heterosexuell</SelectItem>
+                      <SelectItem value="homosexuell">Homosexuell</SelectItem>
+                      <SelectItem value="pansexuell">Pansexuell</SelectItem>
+                      <SelectItem value="phallussexuell">Phallussexuell</SelectItem>
+                      <SelectItem value="sapiosexuell">Sapiosexuell</SelectItem>
+                      <SelectItem value="polysexuell">Polysexuell</SelectItem>
+                      <SelectItem value="tribadiesexuell">Tribadiesexuell</SelectItem>
+                      <SelectItem value="monosexuell">Monosexuell</SelectItem>
+                      <SelectItem value="paedosexuell">Pädosexuell</SelectItem>
+                      <SelectItem value="psychosexuell">Psychosexuell</SelectItem>
+                      <SelectItem value="nomosexuell">Nomosexuell</SelectItem>
+                      <SelectItem value="nowomasexuell">Nowomasexuell</SelectItem>
+                      <SelectItem value="girlfagsexuell">Girlfagsexuell</SelectItem>
+                      <SelectItem value="guydykesexuell">Guydykesexuell</SelectItem>
+                      <SelectItem value="pomosexuell">Pomosexuell</SelectItem>
+                      <SelectItem value="skoliosexuell">Skoliosexuell</SelectItem>
+                      <SelectItem value="abrosexuell">Abrosexuell</SelectItem>
+                      <SelectItem value="ageosexuell">Ageosexuell</SelectItem>
+                      <SelectItem value="akoisexuell">Akoisexuell</SelectItem>
+                      <SelectItem value="allosexuell">Allosexuell</SelectItem>
+                      <SelectItem value="apothisexuell">Apothisexuell</SelectItem>
+                      <SelectItem value="bellusexuell">Bellusexuell</SelectItem>
+                      <SelectItem value="quoisexuell">Quoisexuell</SelectItem>
+                      <SelectItem value="caedosexuell">Caedosexuell</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="romanticOrientation">Romantische Orientierung</Label>
+                  <Select value={profileData.romanticOrientation || ''} onValueChange={(value) => updateProfileData({ romanticOrientation: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Romantische Orientierung" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aromantisch">Aromantisch</SelectItem>
+                      <SelectItem value="biromantisch">Biromantisch</SelectItem>
+                      <SelectItem value="demiromantisch">Demiromantisch</SelectItem>
+                      <SelectItem value="grauromaantisch">Grauromantisch</SelectItem>
+                      <SelectItem value="heteroromantisch">Heteroromantisch</SelectItem>
+                      <SelectItem value="homoromantisch">Homoromantisch</SelectItem>
+                      <SelectItem value="panromantisch">Panromantisch</SelectItem>
+                      <SelectItem value="polyromantisch">Polyromantisch</SelectItem>
+                      <SelectItem value="quoiromantisch">Quoiromantisch</SelectItem>
+                      <SelectItem value="skolioromantisch">Skolioromantisch</SelectItem>
+                      <SelectItem value="lithromantisch">Lithromantisch</SelectItem>
+                      <SelectItem value="autoromantisch">Autoromantisch</SelectItem>
+                      <SelectItem value="androromantisch">Androromantisch</SelectItem>
+                      <SelectItem value="gynoromantisch">Gynoromantisch</SelectItem>
+                      <SelectItem value="abroromantisch">Abroromantisch</SelectItem>
+                      <SelectItem value="aegoromantisch">Aegoromantisch</SelectItem>
+                      <SelectItem value="akoiromantisch">Akoiromantisch</SelectItem>
+                      <SelectItem value="alloromantisch">Alloromantisch</SelectItem>
+                      <SelectItem value="apothiromantisch">Apothiromantisch</SelectItem>
+                      <SelectItem value="belluromantisch">Belluromantisch</SelectItem>
+                      <SelectItem value="caedoromantisch">Caedoromantisch</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
@@ -391,16 +608,87 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <Label>Verfügbare Stunden pro Woche: {profileData.availableHours || 5}</Label>
-                <Slider
-                  value={[profileData.availableHours || 5]}
-                  onValueChange={(value) => updateProfileData({ availableHours: value[0] })}
-                  max={40}
-                  min={1}
-                  step={1}
-                  className="mt-2"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="discretion">Diskretion & Identitätsschutz</Label>
+                  <Select value={profileData.discretion || ''} onValueChange={(value) => updateProfileData({ discretion: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Diskretionsgrad auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">Hohe Diskretion & Identitätsschutz erforderlich (z. B. berufliche Risiken, outing-gefährdet)</SelectItem>
+                      <SelectItem value="medium">Mittlere Diskretion & Identitätsschutz (z. B. im privaten Umfeld offen, aber nicht öffentlich)</SelectItem>
+                      <SelectItem value="low">Geringe Diskretion & Identitätsschutz (z. B. öffentlich bekannte Szene-Person)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="location">Ort & Umfeld</Label>
+                  <Select value={profileData.locationEnvironment || ''} onValueChange={(value) => updateProfileData({ locationEnvironment: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Ort & Umfeld auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="neutral">Neutraler Ort (z. B. gemieteter Playroom, Studio)</SelectItem>
+                      <SelectItem value="private">Privatwohnung</SelectItem>
+                      <SelectItem value="semi-public">Öffentlich halbgeschützt (z. B. Outdoor-Spiele, aber ohne Publikum)</SelectItem>
+                      <SelectItem value="public">Öffentlich sichtbar (bewusste Zurschaustellung, Fetisch-Events)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="travelDistance">Reisebereitschaft bis zu (km)</Label>
+                  <Input
+                    id="travelDistance"
+                    type="text"
+                    value={profileData.travelDistance || ''}
+                    onChange={(e) => updateProfileData({ travelDistance: e.target.value })}
+                    placeholder="z.B. 50"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="relationshipStatus">Aktueller Beziehungsstatus</Label>
+                  <Select value={profileData.relationshipStatus || ''} onValueChange={(value) => updateProfileData({ relationshipStatus: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Beziehungsstatus auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">Single</SelectItem>
+                      <SelectItem value="taken">Vergeben</SelectItem>
+                      <SelectItem value="married">Verheiratet</SelectItem>
+                      <SelectItem value="polyamorous">Polyamor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="exclusivity">Exklusivität</Label>
+                  <Select value={profileData.exclusivity || ''} onValueChange={(value) => updateProfileData({ exclusivity: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Exklusivität auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exclusive">Exklusiv</SelectItem>
+                      <SelectItem value="open">Offen</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Verfügbare Stunden pro Woche: {profileData.availableHours || 5}</Label>
+                  <Slider
+                    value={[profileData.availableHours || 5]}
+                    onValueChange={(value) => updateProfileData({ availableHours: value[0] })}
+                    max={40}
+                    min={1}
+                    step={1}
+                    className="mt-2"
+                  />
+                </div>
               </div>
 
               <div>
@@ -439,19 +727,8 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                   id="healthNotes"
                   value={profileData.healthNotes || ''}
                   onChange={(e) => updateProfileData({ healthNotes: e.target.value })}
-                  placeholder="Relevante Gesundheitsinformationen..."
+                  placeholder="Für diese Beziehung relevante Gesundheitsinformationen, wie z.B. Krankheiten, Therapien, Medikamente, Allergien ..."
                   rows={3}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="allergies">Allergien & Unverträglichkeiten</Label>
-                <Textarea
-                  id="allergies"
-                  value={profileData.allergies || ''}
-                  onChange={(e) => updateProfileData({ allergies: e.target.value })}
-                  placeholder="Allergien, Medikamenteninteraktionen..."
-                  rows={2}
                 />
               </div>
             </CardContent>
@@ -459,44 +736,9 @@ export const ComprehensiveProfileEditor: React.FC = () => {
           </div>
         )}
 
-        {/* BDSM & Grenzen */}
+        {/* Grenzen & Sicherheit */}
         {currentHash === 'bdsm' && (
           <div id="bdsm" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>BDSM-Erfahrung</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="experienceLevel">Erfahrungslevel</Label>
-                <Select value={profileData.experienceLevel || profileData.bdsmExperience || ''} onValueChange={(value) => updateProfileData({ experienceLevel: value, bdsmExperience: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Level wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="curious">Neugierig</SelectItem>
-                    <SelectItem value="beginner">Anfänger</SelectItem>
-                    <SelectItem value="intermediate">Fortgeschritten</SelectItem>
-                    <SelectItem value="experienced">Erfahren</SelectItem>
-                    <SelectItem value="expert">Experte</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Jahre in der Szene: {profileData.yearsInScene || 0}</Label>
-                <Slider
-                  value={[profileData.yearsInScene || 0]}
-                  onValueChange={(value) => updateProfileData({ yearsInScene: value[0] })}
-                  max={30}
-                  min={0}
-                  step={1}
-                  className="mt-2"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>Grenzen & Sicherheit</CardTitle>
@@ -520,6 +762,17 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                   value={profileData.softLimits || ''}
                   onChange={(e) => updateProfileData({ softLimits: e.target.value })}
                   placeholder="Weiche Grenzen..."
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="dealBreakers">Deal-Breaker (absolute No-Gos)</Label>
+                <Textarea
+                  id="dealBreakers"
+                  value={profileData.dealBreakers || ''}
+                  onChange={(e) => updateProfileData({ dealBreakers: e.target.value })}
+                  placeholder="Absolute No-Gos, die eine Beziehung ausschließen würden..."
                   rows={3}
                 />
               </div>
@@ -553,40 +806,50 @@ export const ComprehensiveProfileEditor: React.FC = () => {
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Interessen & Aktivitäten</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <Label htmlFor="interests">Bevorzugte Aktivitäten</Label>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[
-                    'Bondage', 'Impact Play', 'Sensation Play', 'Rope Play', 'Wax Play',
-                    'Temperature Play', 'Pet Play', 'Age Play', 'Role Play', 'Humiliation',
-                    'Praise', 'Service', 'Protocol', 'Orgasm Control', 'Chastity'
-                  ].map((activity) => (
-                    <div key={activity} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`activity-${activity}`}
-                        checked={(profileData.interests || profileData.preferredActivities || []).includes(activity)}
-                        onCheckedChange={(checked) => {
-                          const activities = profileData.interests || profileData.preferredActivities || [];
-                          const newActivities = checked 
-                            ? [...activities, activity]
-                            : activities.filter((a: string) => a !== activity);
-                          updateProfileData({ 
-                            interests: newActivities, 
-                            preferredActivities: newActivities 
-                          });
-                        }}
-                      />
-                      <Label htmlFor={`activity-${activity}`} className="text-sm">{activity}</Label>
-                    </div>
-                  ))}
+              <div className="space-y-4 mt-6 border-t pt-4">
+                <h4 className="text-sm font-medium">Notfallkontakt</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergencyContactName">Name des Notfallkontakts</Label>
+                    <Input
+                      id="emergencyContactName"
+                      value={profileData.emergencyContactName || ''}
+                      onChange={(e) => updateProfileData({ emergencyContactName: e.target.value })}
+                      placeholder="Vollständiger Name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactRelation">Beziehung</Label>
+                    <Input
+                      id="emergencyContactRelation"
+                      value={profileData.emergencyContactRelation || ''}
+                      onChange={(e) => updateProfileData({ emergencyContactRelation: e.target.value })}
+                      placeholder="z.B. Partner/in, Freund/in, Familie"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergencyContactPhone">Telefonnummer</Label>
+                    <Input
+                      id="emergencyContactPhone"
+                      type="tel"
+                      value={profileData.emergencyContactPhone || ''}
+                      onChange={(e) => updateProfileData({ emergencyContactPhone: e.target.value })}
+                      placeholder="+49 xxx xxxxxxx"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactEmail">E-Mail (optional)</Label>
+                    <Input
+                      id="emergencyContactEmail"
+                      type="email"
+                      value={profileData.emergencyContactEmail || ''}
+                      onChange={(e) => updateProfileData({ emergencyContactEmail: e.target.value })}
+                      placeholder="name@example.com"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -746,42 +1009,6 @@ export const ComprehensiveProfileEditor: React.FC = () => {
             </>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Beziehungsziele</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="relationshipType">Gewünschte Beziehungsart</Label>
-                <Select value={profileData.relationshipType || ''} onValueChange={(value) => updateProfileData({ relationshipType: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Beziehungsart" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="casual">Gelegentliche Sessions</SelectItem>
-                    <SelectItem value="regular">Regelmäßige Partnerschaft</SelectItem>
-                    <SelectItem value="exclusive">Exklusive Beziehung</SelectItem>
-                    <SelectItem value="24-7">24/7 Lifestyle</SelectItem>
-                    <SelectItem value="poly">Polyamorie</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="relationshipGoals">Beziehungsziele</Label>
-                <Textarea
-                  id="relationshipGoals"
-                  value={profileData.relationshipGoals || profileData.relationshipGoalsSub || ''}
-                  onChange={(e) => updateProfileData({ 
-                    relationshipGoals: e.target.value,
-                    relationshipGoalsSub: e.target.value
-                  })}
-                  placeholder="Was möchten Sie in einer D/s-Beziehung erreichen?"
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 

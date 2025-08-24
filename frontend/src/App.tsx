@@ -30,7 +30,12 @@ function DashboardRouter() {
   // Check if user needs to complete profile (unless explicitly skipping)
   // Skip onboarding check for profile page since it may be needed for profile completion
   const isProfilePage = window.location.pathname === '/profile';
-  if (user && !user.profileCompleted && !skipOnboarding && !isDirect && !isProfilePage && window.location.pathname !== '/onboarding') {
+  const isDashboardPage = window.location.pathname.startsWith('/dashboard');
+  const isEducationPage = window.location.pathname.startsWith('/education');
+  const isControlPage = window.location.pathname.startsWith('/control');
+  const isJournalPage = window.location.pathname.startsWith('/journal');
+  const isCalendarPage = window.location.pathname.startsWith('/calendar');
+  if (user && !user.profileCompleted && !skipOnboarding && !isDirect && !isProfilePage && !isDashboardPage && !isEducationPage && !isControlPage && !isJournalPage && !isCalendarPage && window.location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -148,12 +153,77 @@ export default function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<Navigate to="/dashboard/overview" replace />} />
           <Route path="overview" element={<PlaceholderPage section="dashboard" tab="overview" />} />
           <Route path="stats" element={<PlaceholderPage section="dashboard" tab="stats" />} />
           <Route
             path="activities"
             element={<PlaceholderPage section="dashboard" tab="activities" />}
           />
+        </Route>
+
+        {/* Education */}
+        <Route
+          path="/education/*"
+          element={
+            <ProtectedRoute>
+              <DashboardRouter />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/education/stufenplan" replace />} />
+          <Route path="stufenplan" element={<PlaceholderPage section="education" tab="stufenplan" />} />
+          <Route path="werte" element={<PlaceholderPage section="education" tab="werte" />} />
+          <Route path="ziele" element={<PlaceholderPage section="education" tab="ziele" />} />
+          <Route path="regeln" element={<PlaceholderPage section="education" tab="regeln" />} />
+          <Route path="routinen" element={<PlaceholderPage section="education" tab="routinen" />} />
+          <Route path="aufgaben" element={<PlaceholderPage section="education" tab="aufgaben" />} />
+        </Route>
+
+        {/* Control & Monitoring */}
+        <Route
+          path="/control/*"
+          element={
+            <ProtectedRoute>
+              <DashboardRouter />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/control/keuschheit" replace />} />
+          <Route path="keuschheit" element={<PlaceholderPage section="control" tab="keuschheit" />} />
+          <Route path="koerper" element={<PlaceholderPage section="control" tab="koerper" />} />
+          <Route path="geist" element={<PlaceholderPage section="control" tab="geist" />} />
+          <Route path="ortung" element={<PlaceholderPage section="control" tab="ortung" />} />
+        </Route>
+
+        {/* Journal & Documents */}
+        <Route
+          path="/journal/*"
+          element={
+            <ProtectedRoute>
+              <DashboardRouter />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/journal/erkenntnisse" replace />} />
+          <Route path="erkenntnisse" element={<PlaceholderPage section="journal" tab="erkenntnisse" />} />
+          <Route path="informationen" element={<PlaceholderPage section="journal" tab="informationen" />} />
+          <Route path="rueckfaelle" element={<PlaceholderPage section="journal" tab="rueckfaelle" />} />
+          <Route path="faq" element={<PlaceholderPage section="journal" tab="faq" />} />
+          <Route path="trigger" element={<PlaceholderPage section="journal" tab="trigger" />} />
+        </Route>
+
+        {/* Calendar */}
+        <Route
+          path="/calendar/*"
+          element={
+            <ProtectedRoute>
+              <DashboardRouter />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/calendar/overview" replace />} />
+          <Route path="overview" element={<PlaceholderPage section="calendar" tab="overview" />} />
         </Route>
 
         {/* Tasks */}
