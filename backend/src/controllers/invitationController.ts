@@ -20,7 +20,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { nanoid } from 'nanoid';
-import * as emailService from '../services/emailService';
+import { emailService } from '../services/emailService';
 import { logger } from '../utils/logger';
 import { CustomError } from '../utils/errors';
 import { ConnectionManagementService } from '../services/connectionManagementService';
@@ -100,6 +100,9 @@ export class InvitationController {
             email,
             expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48h gültig
           },
+          include: {
+            dom: true,
+          },
         });
 
         return invitation;
@@ -109,8 +112,12 @@ export class InvitationController {
       let emailSent = false;
       if (email && !email.includes('@invitation.local')) {
         try {
-          // Email service integration - placeholder for now
-          console.log(`Would send email to ${email} with code ${code}`);
+          // E-Mail mit echtem Service senden
+          await emailService.sendInvitationEmail(
+            email, 
+            code, 
+            invitation.dom.displayName || 'Ein DOM'
+          );
           emailSent = true;
           logger.info(`E-Mail erfolgreich gesendet an ${email}`);
         } catch (emailError) {
