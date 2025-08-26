@@ -22,7 +22,7 @@ interface ZieleFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function ZieleForm({ data, onChange }: ZieleFormProps) {
+function ZieleForm({ data, onChange }: ZieleFormProps) {
   const [showInfo, setShowInfo] = useState(false);
 
   const updateField = (field: string, value: any) => {
@@ -334,3 +334,4 @@ export function ZieleForm({ data, onChange }: ZieleFormProps) {
     </div>
   );
 }
+export default ZieleForm;

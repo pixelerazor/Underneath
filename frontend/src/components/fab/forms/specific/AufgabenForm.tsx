@@ -22,7 +22,7 @@ interface AufgabenFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function AufgabenForm({ data, onChange }: AufgabenFormProps) {
+function AufgabenForm({ data, onChange }: AufgabenFormProps) {
   const [showInfo, setShowInfo] = useState(false);
 
   const updateField = (field: string, value: any) => {
@@ -357,3 +357,4 @@ export function AufgabenForm({ data, onChange }: AufgabenFormProps) {
     </div>
   );
 }
+export default AufgabenForm;

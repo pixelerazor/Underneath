@@ -21,7 +21,7 @@ interface PrivilegienFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
+function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -176,3 +176,4 @@ export function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
     </div>
   );
 }
+export default PrivilegienForm;

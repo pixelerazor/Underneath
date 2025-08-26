@@ -37,7 +37,7 @@ interface InitiationsritenFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function InitiationsritenForm({ data, onChange }: InitiationsritenFormProps) {
+function InitiationsritenForm({ data, onChange }: InitiationsritenFormProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [showSafetyAlert, setShowSafetyAlert] = useState(false);
 
@@ -620,3 +620,5 @@ export function InitiationsritenForm({ data, onChange }: InitiationsritenFormPro
     </div>
   );
 }
+
+export default InitiationsritenForm;

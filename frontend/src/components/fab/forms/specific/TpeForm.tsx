@@ -21,7 +21,7 @@ interface TpeFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function TpeForm({ data, onChange }: TpeFormProps) {
+function TpeForm({ data, onChange }: TpeFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -215,3 +215,4 @@ export function TpeForm({ data, onChange }: TpeFormProps) {
     </div>
   );
 }
+export default TpeForm;

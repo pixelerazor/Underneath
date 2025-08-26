@@ -22,7 +22,7 @@ interface StrafenFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function StrafenForm({ data, onChange }: StrafenFormProps) {
+function StrafenForm({ data, onChange }: StrafenFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -213,3 +213,4 @@ export function StrafenForm({ data, onChange }: StrafenFormProps) {
     </div>
   );
 }
+export default StrafenForm;

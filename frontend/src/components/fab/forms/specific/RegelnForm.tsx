@@ -21,7 +21,7 @@ interface RegelnFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function RegelnForm({ data, onChange }: RegelnFormProps) {
+function RegelnForm({ data, onChange }: RegelnFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -159,3 +159,4 @@ export function RegelnForm({ data, onChange }: RegelnFormProps) {
     </div>
   );
 }
+export default RegelnForm;
