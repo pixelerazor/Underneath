@@ -41,7 +41,7 @@ export function FormHead({
   const [loading, setLoading] = useState(false);
 
   // Form types that need stage assignment
-  const stageAwareFormTypes = ['ziele', 'aufgaben', 'regeln'];
+  const stageAwareFormTypes = ['ziele', 'aufgaben', 'regeln', 'initiationsriten', 'privilegien', 'strafen', 'tpe'];
   const needsStageSelector = selectedFormType && stageAwareFormTypes.includes(selectedFormType);
 
   useEffect(() => {

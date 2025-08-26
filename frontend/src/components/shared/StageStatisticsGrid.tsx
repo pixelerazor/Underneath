@@ -101,6 +101,7 @@ export function StageStatisticsGrid({
       }
     };
 
+    console.log(`🎯 Long-press detected: Creating ${entityType} for Stage ${stageNumber} (${stageName})`);
     setCreateModalContext(context);
   };
 
