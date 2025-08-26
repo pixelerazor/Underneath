@@ -14,7 +14,7 @@ import { IndexForm } from '@/components/fab/IndexForm';
 import { FormType } from '@/components/fab/types/formTypes';
 
 export interface EntityContext {
-  entityType: 'tasks' | 'rules' | 'goals';
+  entityType: 'tasks' | 'rules' | 'goals' | 'initiationsriten' | 'privilegien' | 'strafen' | 'tpe';
   stageId?: string;
   stageName?: string;
   stageNumber?: number;
@@ -39,6 +39,14 @@ export function EntityCreateModal({ isOpen, onClose, context }: EntityCreateModa
         return 'regeln';
       case 'goals':
         return 'ziele';
+      case 'initiationsriten':
+        return 'initiationsriten';
+      case 'privilegien':
+        return 'privilegien';
+      case 'strafen':
+        return 'strafen';
+      case 'tpe':
+        return 'tpe';
       default:
         return 'aufgaben';
     }
@@ -52,6 +60,14 @@ export function EntityCreateModal({ isOpen, onClose, context }: EntityCreateModa
         return 'Neue Regel erstellen';
       case 'goals':
         return 'Neues Ziel erstellen';
+      case 'initiationsriten':
+        return 'Neuen Initiationsritus erstellen';
+      case 'privilegien':
+        return 'Neues Privileg erstellen';
+      case 'strafen':
+        return 'Neue Strafe erstellen';
+      case 'tpe':
+        return 'Neuen TPE-Eintrag erstellen';
       default:
         return 'Neuen Eintrag erstellen';
     }
@@ -67,6 +83,14 @@ export function EntityCreateModal({ isOpen, onClose, context }: EntityCreateModa
         return `Definiere eine neue Regel${stageContext}. Lege Strafen und Bedingungen fest.`;
       case 'goals':
         return `Setze ein neues Ziel${stageContext}. Definiere Belohnungen und Deadlines.`;
+      case 'initiationsriten':
+        return `Erstelle einen neuen Initiationsritus${stageContext}. Definiere Zeremonien und Rituale für Stufenaufstiege.`;
+      case 'privilegien':
+        return `Definiere ein neues Privileg${stageContext}. Lege besondere Rechte und Freiheiten fest.`;
+      case 'strafen':
+        return `Dokumentiere eine neue Strafe${stageContext}. Erfasse Konsequenzen und Disziplinarmaßnahmen.`;
+      case 'tpe':
+        return `Erstelle einen neuen TPE-Eintrag${stageContext}. Dokumentiere Total Power Exchange Elemente.`;
       default:
         return `Erstelle einen neuen Eintrag${stageContext}.`;
     }

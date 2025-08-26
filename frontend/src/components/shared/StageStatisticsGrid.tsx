@@ -64,18 +64,23 @@ export function StageStatisticsGrid({
   } = useStageStatistics({ stageId, stageNumber, stageName, onShowAll });
 
   // Map statistic types to entity types
-  const getEntityTypeFromStatistic = (statisticType: StatisticType): 'tasks' | 'rules' | 'goals' | null => {
+  const getEntityTypeFromStatistic = (statisticType: StatisticType): 'tasks' | 'rules' | 'goals' | 'initiationsriten' | 'privilegien' | 'strafen' | 'tpe' | null => {
     switch (statisticType) {
       case 'tasks':
-      case 'completedTasks':
-      case 'pendingTasks':
+      case 'completed':
         return 'tasks';
       case 'rules':
-      case 'activeRules':
         return 'rules';
       case 'goals':
-      case 'goalsProgress':
         return 'goals';
+      case 'initiationsriten':
+        return 'initiationsriten';
+      case 'privilegien':
+        return 'privilegien';
+      case 'strafen':
+        return 'strafen';
+      case 'tpe':
+        return 'tpe';
       default:
         return null;
     }
@@ -199,15 +204,11 @@ export function StageStatisticsGrid({
       ? getEntityCount(config.id)
       : (expandedEntities.length > 0 ? expandedEntities.length : '0');
 
-    const CardWrapper = config.isMainStat ? LongPressTarget : 'div';
-    const cardProps = config.isMainStat 
-      ? {
-          onLongPress: () => handleLongPress(config.id),
-          className: `${showExpansion ? 'cursor-pointer hover:shadow-md' : ''} transition-all`
-        }
-      : {
-          className: `${showExpansion ? 'cursor-pointer hover:shadow-md' : ''} transition-all`
-        };
+    const CardWrapper = LongPressTarget; // Enable long-press for all cards
+    const cardProps = {
+      onLongPress: () => handleLongPress(config.id),
+      className: `${showExpansion ? 'cursor-pointer hover:shadow-md' : ''} transition-all`
+    };
 
     return (
       <CardWrapper key={config.id} {...cardProps}>
