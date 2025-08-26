@@ -26,7 +26,7 @@ export interface StageStatisticsGridProps {
   stageId: string;
   stageNumber: number;
   stageName: string;
-  statistics: {
+  statistics?: {
     completedToday: number;
     pendingTasks: number;
     activeRules: number;
