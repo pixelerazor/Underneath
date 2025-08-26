@@ -27,7 +27,12 @@ class FormErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error(`FormErrorBoundary: Error in ${this.props.formType} form:`, error, errorInfo);
+    console.error(`FormErrorBoundary: Error in ${this.props.formType} form:`, {
+      error: error.message,
+      stack: error.stack,
+      errorInfo,
+      formType: this.props.formType
+    });
   }
 
   render() {
@@ -254,7 +259,15 @@ export const FormLoader: React.FC<{
   const config = FORM_REGISTRY[formType];
   
   // Debug: Log the form being loaded
-  console.log('FormLoader: Loading', { formType, hasData: !!data, dataKeys: data ? Object.keys(data) : [] });
+  console.log('FormLoader: Loading', { 
+    formType, 
+    hasData: !!data, 
+    dataKeys: data ? Object.keys(data) : [], 
+    dataValues: data ? Object.entries(data).slice(0, 3) : [],  // Log first 3 entries
+    onChangeType: typeof onChange,
+    onSubmitType: typeof onSubmit,
+    onCancelType: typeof onCancel
+  });
   
   if (!config) {
     console.error('FormLoader: Form not found', { formType, availableTypes: Object.keys(FORM_REGISTRY) });
