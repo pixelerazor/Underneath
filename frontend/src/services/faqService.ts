@@ -1,4 +1,5 @@
-import apiClient from './apiClient';
+import { EntityService } from './core/EntityService';
+import { EntityFilter } from './core/EntityService';
 
 export interface FAQ {
   id: string;
@@ -29,48 +30,39 @@ export interface CreateFAQData {
 
 export interface UpdateFAQData extends Partial<CreateFAQData> {}
 
-export interface FAQFilters {
+export interface FAQFilters extends EntityFilter {
   category?: string;
   priority?: string;
   isPublic?: boolean;
 }
 
-class FAQService {
-  private baseURL = '/faq';
+class FAQServiceImpl extends EntityService<FAQ, CreateFAQData, UpdateFAQData> {
+  protected readonly endpoint = '/faq';
 
   async getAllFAQs(filters?: FAQFilters): Promise<FAQ[]> {
-    const params = new URLSearchParams();
-    if (filters?.category) params.append('category', filters.category);
-    if (filters?.priority) params.append('priority', filters.priority);
-    if (filters?.isPublic !== undefined) params.append('isPublic', filters.isPublic.toString());
-
-    const response = await apiClient.get(`${this.baseURL}?${params.toString()}`);
-    return response.data;
+    const response = await this.getAll(filters);
+    return response.items;
   }
 
   async getFAQById(id: string): Promise<FAQ> {
-    const response = await apiClient.get(`${this.baseURL}/${id}`);
-    return response.data;
+    return this.getById(id);
   }
 
   async createFAQ(data: CreateFAQData): Promise<FAQ> {
-    const response = await apiClient.post(this.baseURL, data);
-    return response.data;
+    return this.create(data);
   }
 
   async updateFAQ(id: string, data: UpdateFAQData): Promise<FAQ> {
-    const response = await apiClient.put(`${this.baseURL}/${id}`, data);
-    return response.data;
+    return this.update(id, data);
   }
 
   async deleteFAQ(id: string): Promise<void> {
-    await apiClient.delete(`${this.baseURL}/${id}`);
+    await this.remove(id);
   }
 
   async searchFAQs(query: string): Promise<FAQ[]> {
-    const response = await apiClient.get(`${this.baseURL}/search?q=${encodeURIComponent(query)}`);
-    return response.data;
+    return this.search(query);
   }
 }
 
-export const faqService = new FAQService();
+export const faqService = new FAQServiceImpl();

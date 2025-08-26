@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useConnectionStore } from '@/store/useConnectionStore';
+import { log } from '@/utils/logger';
 import { WelcomeScreen } from '@/components/dom/WelcomeScreen';
 import UserProfile from '@/components/profile/UserProfile';
 import { PAGE_SECTIONS, getPageConfigByPath, getPageTitle } from '@/utils/pageConfig';
@@ -82,7 +83,7 @@ export function DomLayout() {
 
   const handlePlusClick = () => {
     // Kontextabhängige Aktion
-    console.log('Plus clicked in section:', currentSection?.id);
+    log.debug('DomLayout', 'Plus clicked in section', { sectionId: currentSection?.id });
     // Später: Öffne entsprechendes Modal
   };
 
@@ -174,7 +175,7 @@ export function DomLayout() {
             <Tabs value={currentTab?.id || ''} onValueChange={(value) => {
               const tab = currentSection.tabs.find(t => t.id === value);
               if (tab) {
-                console.log('Navigating to:', tab.path);
+                log.debug('DomLayout', 'Navigating to tab', { path: tab.path });
                 navigate(tab.path);
               }
             }}>
@@ -204,7 +205,7 @@ export function DomLayout() {
               <Tabs value={currentSubTab?.id || ''} onValueChange={(value) => {
                 const subTab = tabWithSubTabs.subTabs?.find(t => t.id === value);
                 if (subTab) {
-                  console.log('Navigating to sub-tab:', subTab.path);
+                  log.debug('DomLayout', 'Navigating to sub-tab', { path: subTab.path });
                   navigate(subTab.path);
                 }
               }}>

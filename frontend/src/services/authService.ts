@@ -1,57 +1,10 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { AxiosError } from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
+import { apiClient } from './apiClient';
+import { log } from '../utils/logger';
 
-const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
-
-api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const { accessToken } = useAuthStore.getState();
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config;
-    
-    if (error.response?.status === 401 && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
-      
-      try {
-        const newAccessToken = await refreshAccessToken();
-        if (newAccessToken && originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        // Prevent infinite redirect loops by only logging out once
-        console.log('Authentication failed, logging out user');
-        setTimeout(() => {
-          useAuthStore.getState().logout();
-          // Redirect to login without causing a reload loop
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
-        }, 100);
-        return Promise.reject(refreshError);
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+// Use centralized API client
+const api = apiClient;
 
 // WICHTIG: Backend sendet direkt { user, accessToken, refreshToken }
 // NICHT { success: true, data: { ... } }
@@ -125,7 +78,7 @@ export const logout = async () => {
       await api.post('/auth/logout', { refreshToken });
     }
   } catch (error) {
-    console.error('Logout error:', error);
+    log.error('AuthService', 'Logout error', error instanceof Error ? error : new Error(String(error)));
   } finally {
     useAuthStore.getState().logout();
   }

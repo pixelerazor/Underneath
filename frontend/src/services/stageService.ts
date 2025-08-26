@@ -1,8 +1,5 @@
-// frontend/src/services/stageService.ts
-import { apiClient } from './apiClient';
-
-// Base API URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { EntityService } from './core/EntityService';
+import { log } from '../utils/logger';
 
 // Types
 export interface Stage {
@@ -45,31 +42,35 @@ export interface UpdateStageData {
   isSubLocked?: boolean;
 }
 
-class StageService {
-  private readonly baseURL = '/stages';
+class StageServiceImpl extends EntityService<Stage, CreateStageData, UpdateStageData> {
+  protected readonly endpoint = '/stages';
 
   // Create a new stage
   async createStage(data: CreateStageData): Promise<Stage> {
-    const response = await apiClient.post(this.baseURL, data);
-    return response.data.data || response.data;
+    return this.create(data);
   }
 
   // Get all stages
   async getAllStages(): Promise<Stage[]> {
-    const response = await apiClient.get(this.baseURL);
-    const stages = response.data.data || response.data;
-    
-    // Add Sub settings from localStorage to each stage
-    return stages.map(stage => ({
-      ...stage,
-      ...this.getSubSettings(stage.id)
-    }));
+    try {
+      const response = await this.getAll();
+      const stages = response.items;
+      
+      // Add Sub settings from localStorage to each stage
+      return stages.map(stage => ({
+        ...stage,
+        ...this.getSubSettings(stage.id)
+      }));
+    } catch (error) {
+      log.error('StageService', 'Failed to get all stages', error instanceof Error ? error : new Error(String(error)));
+      // Return empty array as fallback
+      return [];
+    }
   }
 
   // Get stage by ID
   async getStageById(stageId: string): Promise<Stage> {
-    const response = await apiClient.get(`${this.baseURL}/${stageId}`);
-    const stage = response.data.data || response.data;
+    const stage = await this.getById(stageId);
     
     // Add Sub settings from localStorage
     return {
@@ -80,8 +81,7 @@ class StageService {
 
   // Get stage by stage number
   async getStageByNumber(stageNumber: number): Promise<Stage> {
-    const response = await apiClient.get(`${this.baseURL}/number/${stageNumber}`);
-    const stage = response.data.data || response.data;
+    const stage = await this.get<Stage>(`/number/${stageNumber}`);
     
     // Add Sub settings from localStorage
     return {
@@ -92,32 +92,27 @@ class StageService {
 
   // Update stage
   async updateStage(stageId: string, data: UpdateStageData): Promise<Stage> {
-    const response = await apiClient.put(`${this.baseURL}/${stageId}`, data);
-    return response.data;
+    return this.update(stageId, data);
   }
 
   // Delete stage
   async deleteStage(stageId: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.delete(`${this.baseURL}/${stageId}`);
-    return response.data;
+    return this.remove(stageId);
   }
 
   // Toggle stage status (active/inactive)
   async toggleStageStatus(stageId: string): Promise<Stage> {
-    const response = await apiClient.patch(`${this.baseURL}/${stageId}/toggle`);
-    return response.data;
+    return this.patch<Stage>(`/${stageId}/toggle`, {});
   }
 
   // Get stage statistics
   async getStageStatistics(): Promise<any> {
-    const response = await apiClient.get(`${this.baseURL}/statistics`);
-    return response.data;
+    return this.get<any>('/statistics');
   }
 
   // Initialize default stages
   async initializeDefaultStages(): Promise<{ message: string; stages?: Stage[] }> {
-    const response = await apiClient.post(`${this.baseURL}/initialize`);
-    return response.data;
+    return this.post<{ message: string; stages?: Stage[] }>('/initialize', {});
   }
 
   // Sub Settings Methods (Temporary localStorage fallback until backend is implemented)
@@ -164,7 +159,7 @@ class StageService {
         currentStage = await this.getStageById(stageId);
       } catch (error: any) {
         // If authentication fails, create minimal stage object
-        console.warn('Could not fetch stage data, using fallback:', error.message);
+        log.warn('StageService', 'Could not fetch stage data, using fallback', error instanceof Error ? error : new Error(String(error)));
         currentStage = {
           id: stageId,
           stageNumber: 0,
@@ -184,7 +179,7 @@ class StageService {
         isSubLocked: currentSettings.isSubLocked
       };
     } catch (error) {
-      console.error('Error in toggleSubActive fallback:', error);
+      log.error('StageService', 'Error in toggleSubActive fallback', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -203,7 +198,7 @@ class StageService {
       try {
         currentStage = await this.getStageById(stageId);
       } catch (error: any) {
-        console.warn('Could not fetch stage data, using fallback:', error.message);
+        log.warn('StageService', 'Could not fetch stage data, using fallback', error instanceof Error ? error : new Error(String(error)));
         currentStage = {
           id: stageId,
           stageNumber: 0,
@@ -223,7 +218,7 @@ class StageService {
         isSubLocked: currentSettings.isSubLocked
       };
     } catch (error) {
-      console.error('Error in toggleSubVisible fallback:', error);
+      log.error('StageService', 'Error in toggleSubVisible fallback', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -242,7 +237,7 @@ class StageService {
       try {
         currentStage = await this.getStageById(stageId);
       } catch (error: any) {
-        console.warn('Could not fetch stage data, using fallback:', error.message);
+        log.warn('StageService', 'Could not fetch stage data, using fallback', error instanceof Error ? error : new Error(String(error)));
         currentStage = {
           id: stageId,
           stageNumber: 0,
@@ -262,7 +257,7 @@ class StageService {
         isSubLocked: newStatus
       };
     } catch (error) {
-      console.error('Error in toggleSubLocked fallback:', error);
+      log.error('StageService', 'Error in toggleSubLocked fallback', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -291,7 +286,7 @@ class StageService {
         ...updatedSettings
       };
     } catch (error) {
-      console.error('Error in updateSubSettings fallback:', error);
+      log.error('StageService', 'Error in updateSubSettings fallback', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -320,4 +315,4 @@ class StageService {
   }
 }
 
-export const stageService = new StageService();
+export const stageService = new StageServiceImpl();

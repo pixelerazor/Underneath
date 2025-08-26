@@ -13,6 +13,7 @@ import EntitiesOverviewPage from './pages/entities/EntitiesOverviewPage';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 import NotificationService from './services/notificationService';
+import { log } from './utils/logger';
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,7 +27,7 @@ function DashboardRouter() {
   const skipOnboarding = searchParams.get('skip_onboarding') === 'true';
   
   // Debug logging to identify reload loops
-  console.log('DashboardRouter render:', {
+  log.debug('App', 'DashboardRouter render', {
     user: user?.email,
     profileCompleted: user?.profileCompleted,
     currentPath: window.location.pathname,
@@ -65,7 +66,7 @@ export default function App() {
     if (isAuthenticated) {
       // Kurz warten, dann Notification-Permission anfordern
       const timer = setTimeout(() => {
-        console.log('Requesting notification permission for authenticated user...');
+        log.info('App', 'Requesting notification permission for authenticated user');
         NotificationService.requestPermission();
       }, 2000); // 2 Sekunden nach Login
 

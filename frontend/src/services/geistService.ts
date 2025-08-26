@@ -1,4 +1,5 @@
-import apiClient from './apiClient';
+import { EntityService } from './core/EntityService';
+import { EntityFilter } from './core/EntityService';
 
 export interface WellbeingEntry {
   id: string;
@@ -28,7 +29,7 @@ export interface CreateWellbeingData {
 
 export interface UpdateWellbeingData extends Partial<CreateWellbeingData> {}
 
-export interface WellbeingFilters {
+export interface WellbeingFilters extends EntityFilter {
   category?: string;
   startDate?: string;
   endDate?: string;
@@ -41,42 +42,33 @@ export interface WellbeingStatistics {
   categories: Record<string, number>;
 }
 
-class GeistService {
-  private baseURL = '/geist';
+class GeistServiceImpl extends EntityService<WellbeingEntry, CreateWellbeingData, UpdateWellbeingData> {
+  protected readonly endpoint = '/geist';
 
   async getAllEntries(filters?: WellbeingFilters): Promise<WellbeingEntry[]> {
-    const params = new URLSearchParams();
-    if (filters?.category) params.append('category', filters.category);
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
-
-    const response = await apiClient.get(`${this.baseURL}?${params.toString()}`);
-    return response.data;
+    const response = await this.getAll(filters);
+    return response.items;
   }
 
   async getEntryById(id: string): Promise<WellbeingEntry> {
-    const response = await apiClient.get(`${this.baseURL}/${id}`);
-    return response.data;
+    return this.getById(id);
   }
 
   async createEntry(data: CreateWellbeingData): Promise<WellbeingEntry> {
-    const response = await apiClient.post(this.baseURL, data);
-    return response.data;
+    return this.create(data);
   }
 
   async updateEntry(id: string, data: UpdateWellbeingData): Promise<WellbeingEntry> {
-    const response = await apiClient.put(`${this.baseURL}/${id}`, data);
-    return response.data;
+    return this.update(id, data);
   }
 
   async deleteEntry(id: string): Promise<void> {
-    await apiClient.delete(`${this.baseURL}/${id}`);
+    await this.remove(id);
   }
 
   async getStatistics(period: 'week' | 'month' | 'year' = 'month'): Promise<WellbeingStatistics> {
-    const response = await apiClient.get(`${this.baseURL}/statistics?period=${period}`);
-    return response.data;
+    return this.get<WellbeingStatistics>(`/statistics?period=${period}`);
   }
 }
 
-export const geistService = new GeistService();
+export const geistService = new GeistServiceImpl();

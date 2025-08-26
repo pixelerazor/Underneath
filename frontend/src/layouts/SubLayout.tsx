@@ -19,6 +19,7 @@ import UserProfile from '@/components/profile/UserProfile';
 import { PAGE_SECTIONS, getPageConfigByPath, getPageTitle } from '@/utils/pageConfig';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { log } from '@/utils/logger';
 
 // Sidebar-Konfiguration (relative Pfade, da SubLayout unter /sub/* gerendert wird)
 const SIDEBAR_ITEMS = [
@@ -214,7 +215,7 @@ export function SubLayout() {
             <Tabs value={currentTab?.id || ''} onValueChange={(value) => {
               const tab = currentSection.tabs.find(t => t.id === value);
               if (tab) {
-                console.log('SubLayout navigating to:', tab.path);
+                log.debug('SubLayout', 'Navigating to tab', { path: tab.path });
                 navigate(tab.path);
               }
             }}>

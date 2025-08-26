@@ -8,6 +8,7 @@
  */
 
 import { toast } from 'sonner';
+import { log } from '../utils/logger';
 
 interface NotificationData {
   title: string;
@@ -37,7 +38,7 @@ class NotificationService {
    */
   private checkNotificationSupport(): void {
     this.isFirebaseAvailable = 'Notification' in window && 'serviceWorker' in navigator;
-    console.log('Notification support:', this.isFirebaseAvailable);
+    log.debug('NotificationService', 'Notification support', { isFirebaseAvailable: this.isFirebaseAvailable });
   }
 
   /**
@@ -45,10 +46,10 @@ class NotificationService {
    */
   async requestPermission(): Promise<boolean> {
     try {
-      console.log('Requesting notification permission...');
+      log.info('NotificationService', 'Requesting notification permission');
       
       if (!this.isFirebaseAvailable) {
-        console.log('Browser does not support notifications');
+        log.warn('NotificationService', 'Browser does not support notifications');
         return false;
       }
 
@@ -56,7 +57,7 @@ class NotificationService {
       
       if (permission === 'granted') {
         this.permissionGranted = true;
-        console.log('Notification permission granted');
+        log.info('NotificationService', 'Notification permission granted');
         
         // Push-Benachrichtigung zur Bestätigung
         setTimeout(() => {
@@ -69,10 +70,10 @@ class NotificationService {
         
         return true;
       } else {
-        console.log('Notification permission denied');
+        log.warn('NotificationService', 'Notification permission denied');
         
         // Browser-Benachrichtigung geht nicht, also nur console log
-        console.log('Push-Nachrichten wurden abgelehnt - keine Benachrichtigungen möglich');
+        log.warn('NotificationService', 'Push-Nachrichten wurden abgelehnt - keine Benachrichtigungen möglich');
         
         return false;
       }
@@ -121,7 +122,7 @@ class NotificationService {
         notification.close();
       };
 
-      console.log('Local notification shown:', data.title);
+      log.debug('NotificationService', 'Local notification shown', { title: data.title });
     } catch (error) {
       console.error('Error showing notification:', error);
       // No toast fallback - just log the error

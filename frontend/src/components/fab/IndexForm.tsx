@@ -27,6 +27,7 @@ import { tpeService } from '../../services/tpeService';
 import { triggerService } from '../../services/triggerService';
 import { allgemeineInformationenService } from '../../services/allgemeineInformationenService';
 import { toast } from 'sonner';
+import { log } from '../../utils/logger';
 
 interface IndexFormProps {
   onClose: () => void;
@@ -48,7 +49,7 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
         const stageInfo = await entityRegistry.getUserStageInfo();
         setCurrentStage(stageInfo.pointAccount.currentStage);
       } catch (error) {
-        console.warn('Could not load user stage info:', error);
+        log.warn('IndexForm', 'Could not load user stage info', error instanceof Error ? error : new Error(String(error)));
         // Fallback to stage 1 if unable to load
         setCurrentStage(1);
       }
@@ -296,7 +297,7 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
           break;
 
         default:
-          console.log('Unhandled form type:', formType);
+          log.warn('IndexForm', 'Unhandled form type', { formType });
           toast.info('Diese Funktion wird noch implementiert.');
       }
     } catch (error: any) {
@@ -354,7 +355,7 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
           createdEntity = await entityRegistry.createEntity(entityType, entityData);
         }
         
-        console.log(`Created ${entityType}:`, createdEntity);
+        log.info('IndexForm', 'Entity created successfully', { entityType, entityId: createdEntity.id });
         
         // Show success feedback
         toast.success(`${entityType === 'TASK' ? 'Aufgabe' : entityType === 'RULE' ? 'Regel' : 'Ziel'} erfolgreich erstellt!`);
