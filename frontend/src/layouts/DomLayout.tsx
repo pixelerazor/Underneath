@@ -29,6 +29,10 @@ export function DomLayout() {
   const logout = useAuthStore((state) => state.logout);
   const { connectedSub } = useConnectionStore();
 
+  // Check if we're on the Stufenplan page and should hide navigation tabs only
+  const isStufenplanPage = location.pathname === '/education/stufenplan';
+  const hideNavigationTabs = isStufenplanPage;
+
   // Listen for hash changes
   useEffect(() => {
     const handleHashChange = () => {
@@ -164,8 +168,8 @@ export function DomLayout() {
           <div className="absolute right-4 w-10"></div>
         </div>
 
-        {/* Main Tab Bar */}
-        {currentSection && (
+        {/* Main Tab Bar - Hidden on Stufenplan page */}
+        {currentSection && !hideNavigationTabs && (
           <div className="border-t overflow-x-auto">
             <Tabs value={currentTab?.id || ''} onValueChange={(value) => {
               const tab = currentSection.tabs.find(t => t.id === value);
@@ -189,8 +193,8 @@ export function DomLayout() {
           </div>
         )}
 
-        {/* Sub Tab Bar - same design as main tab bar */}
-        {currentSection && currentSection.tabs.some(tab => tab.subTabs) && (() => {
+        {/* Sub Tab Bar - same design as main tab bar - Hidden on Stufenplan page */}
+        {currentSection && !hideNavigationTabs && currentSection.tabs.some(tab => tab.subTabs) && (() => {
           // Always show sub-tabs for sections that have them (education, profile)
           const tabWithSubTabs = currentSection.tabs.find(tab => tab.subTabs);
           if (!tabWithSubTabs?.subTabs) return null;
@@ -222,12 +226,13 @@ export function DomLayout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-6 pb-20">
+      <main className={`flex-1 container mx-auto px-4 py-6 ${hideNavigationTabs ? 'pb-6' : 'pb-20'}`}>
         {currentSection?.id === 'profile' ? <UserProfile /> : <Outlet />}
       </main>
 
-      {/* Bottom Bar */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t">
+      {/* Bottom Bar - Hidden on Stufenplan page */}
+      {!hideNavigationTabs && (
+        <footer className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t">
         {connectedSub ? (
           <div className="flex items-center justify-center px-4 h-14">
             <div className="flex flex-col items-center">
@@ -241,9 +246,10 @@ export function DomLayout() {
             <span className="text-muted-foreground">Kein Sub verbunden</span>
           </div>
         )}
-      </footer>
+        </footer>
+      )}
 
-      {/* Floating Action Menu */}
+      {/* Floating Action Menu - Always visible */}
       <FloatingActionMenu />
     </div>
   );

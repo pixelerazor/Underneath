@@ -16,11 +16,47 @@ interface FormBottomProps {
   onChange: (data: Record<string, any>) => void;
   onSubmit: () => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
-export function FormBottom({ formType, data, onSubmit, onCancel }: FormBottomProps) {
+export function FormBottom({ formType, data, onSubmit, onCancel, isSubmitting }: FormBottomProps) {
   const getSubmitButtonText = () => {
     switch (formType) {
+      // German form types (primary system)
+      case 'allgemeine_informationen':
+        return 'Information speichern';
+      case 'aufgaben':
+        return 'Aufgabe erstellen';
+      case 'faq':
+        return 'FAQ speichern';
+      case 'geist':
+        return 'Eintrag speichern';
+      case 'initiationsriten':
+        return 'Ritual erstellen';
+      case 'keuschheit':
+        return 'Eintrag dokumentieren';
+      case 'neue_erkenntnisse':
+        return 'Erkenntnis speichern';
+      case 'neue_stufe':
+        return 'Stufe erstellen';
+      case 'privilegien':
+        return 'Privileg erstellen';
+      case 'regeln':
+        return 'Regel erstellen';
+      case 'rueckfaelle':
+        return 'Rückfall dokumentieren';
+      case 'strafen':
+        return 'Strafe dokumentieren';
+      case 'stufen':
+        return 'Eintrag erstellen';
+      case 'tpe':
+        return 'TPE Eintrag speichern';
+      case 'trigger':
+        return 'Trigger dokumentieren';
+      case 'ziele':
+        return 'Ziel erstellen';
+      
+      // Legacy English form types (backward compatibility)
       case 'task':
         return 'Aufgabe erstellen';
       case 'note':
@@ -41,8 +77,13 @@ export function FormBottom({ formType, data, onSubmit, onCancel }: FormBottomPro
   };
 
   const isSubmitDisabled = () => {
+    // Handle special case for stage form which uses 'stageName' instead of 'title'
+    if (formType === 'neue_stufe') {
+      return !data.stageName || data.stageName.trim().length === 0 || isSubmitting;
+    }
+    
     // Basic validation - require title for most forms
-    return !data.title || data.title.trim().length === 0;
+    return !data.title || data.title.trim().length === 0 || isSubmitting;
   };
 
   return (

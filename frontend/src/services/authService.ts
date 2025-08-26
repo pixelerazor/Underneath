@@ -37,7 +37,15 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        useAuthStore.getState().logout();
+        // Prevent infinite redirect loops by only logging out once
+        console.log('Authentication failed, logging out user');
+        setTimeout(() => {
+          useAuthStore.getState().logout();
+          // Redirect to login without causing a reload loop
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }, 100);
         return Promise.reject(refreshError);
       }
     }

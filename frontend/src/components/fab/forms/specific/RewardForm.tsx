@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { StageSelector } from '../components/StageSelector';
 
 interface RewardFormProps {
   data: Record<string, any>;
@@ -22,8 +23,17 @@ export function RewardForm({ data, onChange }: RewardFormProps) {
   };
 
   return (
-    <Card className="border-0 rounded-none shadow-none">
-      <CardContent className="space-y-4 pt-4">
+    <div className="space-y-4">
+      {/* Stage Selection Header */}
+      <StageSelector
+        activeFromStage={data.activeFromStage}
+        activeToStage={data.activeToStage}
+        onActiveFromStageChange={(stage) => handleChange('activeFromStage', stage)}
+        onActiveToStageChange={(stage) => handleChange('activeToStage', stage)}
+      />
+      
+      <Card className="border-0 rounded-none shadow-none">
+        <CardContent className="space-y-4 pt-4">
         <div>
           <Label htmlFor="title">Belohnung *</Label>
           <Input
@@ -84,6 +94,7 @@ export function RewardForm({ data, onChange }: RewardFormProps) {
           />
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

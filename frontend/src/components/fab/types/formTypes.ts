@@ -6,24 +6,31 @@
 
 // Available form types
 export type FormType = 
+  // German form types (primary system)
   | 'allgemeine_informationen'
   | 'aufgaben'
   | 'faq'
-  | 'gaben'
   | 'geist'
   | 'initiationsriten'
   | 'keuschheit'
   | 'neue_erkenntnisse'
+  | 'neue_stufe'
   | 'privilegien'
   | 'regeln'
-  | 'routinen'
   | 'rueckfaelle'
   | 'strafen'
   | 'stufen'
   | 'tpe'
   | 'trigger'
-  | 'werte'
-  | 'ziele';
+  | 'ziele'
+  // Legacy English form types (backward compatibility)
+  | 'task'
+  | 'note'
+  | 'rule'
+  | 'punishment'
+  | 'reward'
+  | 'appointment'
+  | 'achievement';
 
 // Form type configuration
 export interface FormTypeConfig {
@@ -51,11 +58,6 @@ export const FORM_TYPES: FormTypeConfig[] = [
     description: 'Häufige Frage hinzufügen',
   },
   {
-    id: 'gaben',
-    label: 'Gaben',
-    description: 'Gabe dokumentieren',
-  },
-  {
     id: 'geist',
     label: 'Geist',
     description: 'Geistiges Wohlbefinden dokumentieren',
@@ -76,6 +78,11 @@ export const FORM_TYPES: FormTypeConfig[] = [
     description: 'Erkenntnis festhalten',
   },
   {
+    id: 'neue_stufe',
+    label: 'Neue Stufe',
+    description: 'Neue Stufe zum System hinzufügen',
+  },
+  {
     id: 'privilegien',
     label: 'Privilegien',
     description: 'Privileg definieren',
@@ -84,11 +91,6 @@ export const FORM_TYPES: FormTypeConfig[] = [
     id: 'regeln',
     label: 'Regeln',
     description: 'Neue Regel definieren',
-  },
-  {
-    id: 'routinen',
-    label: 'Routinen',
-    description: 'Routine festlegen',
   },
   {
     id: 'rueckfaelle',
@@ -116,14 +118,9 @@ export const FORM_TYPES: FormTypeConfig[] = [
     description: 'Trigger identifizieren',
   },
   {
-    id: 'werte',
-    label: 'Werte',
-    description: 'Wert definieren',
-  },
-  {
     id: 'ziele',
-    label: 'Ziele',
-    description: 'Ziel festlegen',
+    label: 'Ziel',
+    description: 'SMART-Ziel definieren',
   },
 ];
 

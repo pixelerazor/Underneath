@@ -8,7 +8,6 @@ import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { IndexForm } from './IndexForm';
 
 interface FloatingActionMenuProps {
@@ -30,7 +29,7 @@ export function FloatingActionMenu({ onClose }: FloatingActionMenuProps) {
   return (
     <>
       {/* Floating Action Button */}
-      <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-[60]">
         <Button 
           onClick={handleOpen}
           className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-full shadow-lg flex items-center justify-center transition-colors"
@@ -42,10 +41,8 @@ export function FloatingActionMenu({ onClose }: FloatingActionMenuProps) {
       {/* Overlay Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0">
-          <VisuallyHidden>
-            <DialogTitle>Neuen Eintrag erstellen</DialogTitle>
-            <DialogDescription>Wähle den Typ des Eintrags aus</DialogDescription>
-          </VisuallyHidden>
+          <DialogTitle className="sr-only">Neuen Eintrag erstellen</DialogTitle>
+          <DialogDescription className="sr-only">Wähle den Typ des Eintrags aus und fülle die entsprechenden Felder aus</DialogDescription>
           {/* Index Form */}
           <IndexForm onClose={handleClose} />
         </DialogContent>

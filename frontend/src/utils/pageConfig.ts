@@ -51,15 +51,12 @@ export const PAGE_SECTIONS: Record<string, PageSection> = {
         subTabs: [
           { id: 'initiationsriten', label: 'Initiationsriten', path: '/education/stufenplan#initiationsriten' },
           { id: 'privilegien', label: 'Privilegien', path: '/education/stufenplan#privilegien' },
-          { id: 'gaben', label: 'Gaben', path: '/education/stufenplan#gaben' },
           { id: 'strafen', label: 'Strafen', path: '/education/stufenplan#strafen' },
           { id: 'tpe', label: 'TPE', path: '/education/stufenplan#tpe' },
         ]
       },
-      { id: 'werte', label: 'Werte', path: '/education/werte' },
       { id: 'ziele', label: 'Ziele', path: '/education/ziele' },
       { id: 'regeln', label: 'Regeln', path: '/education/regeln' },
-      { id: 'routinen', label: 'Routinen', path: '/education/routinen' },
       { id: 'aufgaben', label: 'Aufgaben', path: '/education/aufgaben' },
     ],
   },

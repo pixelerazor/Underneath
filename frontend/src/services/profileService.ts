@@ -263,7 +263,7 @@ export class ProfileService {
                 { value: 'discipline', label: 'Disziplin & Struktur' },
                 { value: 'development', label: 'Persönliche Entwicklung' },
                 { value: 'tasks', label: 'Aufgaben & Ziele' },
-                { value: 'rituals', label: 'Rituale & Routinen' },
+                { value: 'rituals', label: 'Rituale' },
                 { value: 'communication', label: 'Kommunikation' },
               ],
             },

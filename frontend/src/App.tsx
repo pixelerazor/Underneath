@@ -8,6 +8,8 @@ import { SubLayout } from './layouts/SubLayout';
 import { JoinWithCode } from './components/sub/JoinWithCode';
 import PlaceholderPage from './components/common/PlaceholderPage';
 import ProfileCompletionWizard from './components/onboarding/ProfileCompletionWizard';
+import { StufenplanPage } from './pages/education/StufenplanPage';
+import EntitiesOverviewPage from './pages/entities/EntitiesOverviewPage';
 import { Toaster } from 'sonner';
 import { useEffect } from 'react';
 import NotificationService from './services/notificationService';
@@ -23,21 +25,26 @@ function DashboardRouter() {
   const searchParams = new URLSearchParams(window.location.search);
   const skipOnboarding = searchParams.get('skip_onboarding') === 'true';
   
+  // Debug logging to identify reload loops
+  console.log('DashboardRouter render:', {
+    user: user?.email,
+    profileCompleted: user?.profileCompleted,
+    currentPath: window.location.pathname,
+    skipOnboarding
+  });
+  
   // Skip onboarding for direct routes or emergency routes
   const isDirect = window.location.pathname === '/dashboard/direct' || 
                    window.location.pathname === '/escape';
 
-  // Check if user needs to complete profile (unless explicitly skipping)
-  // Skip onboarding check for profile page since it may be needed for profile completion
-  const isProfilePage = window.location.pathname === '/profile';
-  const isDashboardPage = window.location.pathname.startsWith('/dashboard');
-  const isEducationPage = window.location.pathname.startsWith('/education');
-  const isControlPage = window.location.pathname.startsWith('/control');
-  const isJournalPage = window.location.pathname.startsWith('/journal');
-  const isCalendarPage = window.location.pathname.startsWith('/calendar');
-  if (user && !user.profileCompleted && !skipOnboarding && !isDirect && !isProfilePage && !isDashboardPage && !isEducationPage && !isControlPage && !isJournalPage && !isCalendarPage && window.location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
-  }
+  // Temporarily disable onboarding redirects to fix reload loop
+  // const currentPath = window.location.pathname;
+  // const onboardingExemptPaths = ['/onboarding', '/profile', '/login', '/register'];
+  // const needsOnboarding = user && !user.profileCompleted && !skipOnboarding && !isDirect;
+  
+  // if (needsOnboarding && !onboardingExemptPaths.some(path => currentPath.startsWith(path))) {
+  //   return <Navigate to="/onboarding" replace />;
+  // }
 
   if (user?.role === 'DOM') {
     return <DomLayout />;
@@ -172,11 +179,10 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="/education/stufenplan" replace />} />
-          <Route path="stufenplan" element={<PlaceholderPage section="education" tab="stufenplan" />} />
-          <Route path="werte" element={<PlaceholderPage section="education" tab="werte" />} />
+          <Route path="stufenplan" element={<StufenplanPage />} />
+          <Route path="entities" element={<EntitiesOverviewPage />} />
           <Route path="ziele" element={<PlaceholderPage section="education" tab="ziele" />} />
           <Route path="regeln" element={<PlaceholderPage section="education" tab="regeln" />} />
-          <Route path="routinen" element={<PlaceholderPage section="education" tab="routinen" />} />
           <Route path="aufgaben" element={<PlaceholderPage section="education" tab="aufgaben" />} />
         </Route>
 
