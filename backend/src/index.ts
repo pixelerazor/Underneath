@@ -9,6 +9,9 @@ import authRoutes from './routes/authRoutes';
 import invitationRoutes from './routes/invitationRoutes';
 import connectionRoutes from './routes/connectionRoutes';
 import { profileRoutes } from './routes/profile';
+import stagesRoutes from './routes/stagesRoutes';
+import tasksRoutes from './routes/tasksRoutes';
+import rulesRoutes from './routes/rulesRoutes';
 
 // Import middleware for protected routes
 import { authenticateToken } from './middleware/auth';
@@ -62,6 +65,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/invitations', authenticateToken, invitationRoutes);
 app.use('/api/connections', authenticateToken, connectionRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/stages', authenticateToken, stagesRoutes);
+app.use('/api/tasks', authenticateToken, tasksRoutes);
+app.use('/api/rules', authenticateToken, rulesRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
