@@ -87,9 +87,9 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
     try {
       const updatedStage = await stageService.toggleSubLocked(stageId);
       
-      // Update local state
+      // Update local state while preserving statistics
       setAllStages(prev => prev.map(stage => 
-        stage.id === stageId ? updatedStage : stage
+        stage.id === stageId ? { ...updatedStage, statistics: stage.statistics } : stage
       ));
       
       toast.success(`Stufe "${stageName}" ist jetzt für Sub ${updatedStage.isSubLocked ? 'gesperrt' : 'offen'}`);
@@ -146,9 +146,9 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
     try {
       const updatedStage = await stageService.toggleSubVisible(stageId);
       
-      // Update local state
+      // Update local state while preserving statistics
       setAllStages(prev => prev.map(stage => 
-        stage.id === stageId ? updatedStage : stage
+        stage.id === stageId ? { ...updatedStage, statistics: stage.statistics } : stage
       ));
       
       toast.success(`Stufe "${stageName}" ist jetzt für Sub ${updatedStage.isSubVisible ? 'sichtbar' : 'unsichtbar'}`);
@@ -249,7 +249,7 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
   function StageContainer({ stage, status, statistics }: { 
     stage: StageWithStats; 
     status: string; 
-    statistics: StageStatistics; 
+    statistics?: StageStatistics; 
   }) {
     // Handle "Show All" clicks by setting global detail view
     const handleShowAll = (_entityType: any, entities: any[], entityTitle: string) => {
@@ -396,7 +396,7 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
                     <span className="text-sm font-medium text-white">Heute erledigt</span>
                   </div>
                   <div className="text-xl font-bold text-white">
-                    {statistics.completedToday}
+                    {statistics?.completedToday ?? 0}
                   </div>
                   <div className="text-xs text-gray-300">Aufgaben abgeschlossen</div>
                 </div>
@@ -408,7 +408,7 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
                     <span className="text-sm font-medium text-white">Ziele Fortschritt</span>
                   </div>
                   <div className="text-xl font-bold text-white">
-                    {statistics.goalsProgress}%
+                    {statistics?.goalsProgress ?? 0}%
                   </div>
                   <div className="text-xs text-gray-300">Durchschnitt</div>
                 </div>

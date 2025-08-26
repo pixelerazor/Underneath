@@ -60,7 +60,7 @@ apiClient.interceptors.response.use(
     
     return response;
   },
-  (error) => {
+  async (error) => {
     // Log API errors
     const config = error.config as any;
     const startTime = config?.metadata?.startTime || Date.now();
@@ -74,13 +74,49 @@ apiClient.interceptors.response.use(
     );
     
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      const { logout } = useAuthStore.getState();
-      log.warn('ApiClient', 'Authentication failed, logging out user');
-      logout();
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // Try to refresh token before logging out
+      const originalRequest = error.config;
+      
+      if (originalRequest && !(originalRequest as any)._retry) {
+        (originalRequest as any)._retry = true;
+        
+        try {
+          const { refreshToken } = useAuthStore.getState();
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+          
+          // Attempt to refresh the access token
+          const response = await apiClient.post('/auth/refresh', { refreshToken });
+          const { accessToken } = response.data;
+          
+          // Update the store with new access token
+          const { user } = useAuthStore.getState();
+          if (user) {
+            useAuthStore.getState().login(user, accessToken, refreshToken);
+          }
+          
+          // Retry the original request with new token
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          }
+          
+          log.info('ApiClient', 'Token refreshed successfully');
+          return apiClient(originalRequest);
+          
+        } catch (refreshError) {
+          // Refresh failed - now logout
+          log.warn('ApiClient', 'Token refresh failed, logging out user');
+          const { logout } = useAuthStore.getState();
+          logout();
+          
+          // Only redirect if not already on login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+          
+          return Promise.reject(refreshError);
+        }
       }
     }
     

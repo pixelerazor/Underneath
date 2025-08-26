@@ -12,6 +12,46 @@ import React, { lazy, Suspense } from 'react';
 import { FormType } from '../fab/types/formTypes';
 import { Skeleton } from '../ui/skeleton';
 
+// Error Boundary for form components
+class FormErrorBoundary extends React.Component<
+  { children: React.ReactNode; formType: string },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode; formType: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error(`FormErrorBoundary: Error in ${this.props.formType} form:`, error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 text-center text-red-600">
+          <p className="font-semibold">Error loading "{this.props.formType}" form</p>
+          <p className="text-sm mt-2 text-gray-600">
+            {this.state.error?.message || 'Form component crashed during render'}
+          </p>
+          <button 
+            onClick={() => this.setState({ hasError: false, error: undefined })}
+            className="mt-3 px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Lazy load form components for better performance
 const AufgabenForm = lazy(() => import('../fab/forms/specific/AufgabenForm'));
 const RegelnForm = lazy(() => import('../fab/forms/specific/RegelnForm'));
@@ -213,7 +253,11 @@ export const FormLoader: React.FC<{
 }> = ({ formType, data, onChange, onSubmit, onCancel }) => {
   const config = FORM_REGISTRY[formType];
   
+  // Debug: Log the form being loaded
+  console.log('FormLoader: Loading', { formType, hasData: !!data, dataKeys: data ? Object.keys(data) : [] });
+  
   if (!config) {
+    console.error('FormLoader: Form not found', { formType, availableTypes: Object.keys(FORM_REGISTRY) });
     return (
       <div className="p-6 text-center text-red-600">
         <p>Form type "{formType}" not found</p>
@@ -224,14 +268,16 @@ export const FormLoader: React.FC<{
   const FormComponent = config.component;
   
   return (
-    <Suspense fallback={<FormSkeleton />}>
-      <FormComponent 
-        data={data}
-        onChange={onChange}
-        onSubmit={onSubmit}
-        onCancel={onCancel}
-      />
-    </Suspense>
+    <FormErrorBoundary formType={formType}>
+      <Suspense fallback={<FormSkeleton />}>
+        <FormComponent 
+          data={data || {}}
+          onChange={onChange || (() => {})}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+      </Suspense>
+    </FormErrorBoundary>
   );
 };
 
