@@ -10,6 +10,7 @@
  */
 
 import { apiClient } from './apiClient';
+import { log } from '../utils/logger';
 
 export interface BaseEntity {
   id: string;
@@ -286,7 +287,7 @@ export class EntityRegistry {
     }
 
     try {
-      console.log('Making API request to:', 'points/current-stage');
+      log.debug('EntityRegistry', 'Making API request for current stage');
       const response = await apiClient.get('points/current-stage');
       
       if (response.data.success) {

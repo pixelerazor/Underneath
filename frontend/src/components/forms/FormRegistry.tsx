@@ -210,7 +210,7 @@ export const FormLoader: React.FC<{
   onChange: (data: Record<string, any>) => void;
   onSubmit?: () => void;
   onCancel?: () => void;
-}> = ({ formType, ...props }) => {
+}> = ({ formType, data, onChange, onSubmit, onCancel }) => {
   const config = FORM_REGISTRY[formType];
   
   if (!config) {
@@ -225,7 +225,12 @@ export const FormLoader: React.FC<{
   
   return (
     <Suspense fallback={<FormSkeleton />}>
-      <FormComponent {...props} />
+      <FormComponent 
+        data={data}
+        onChange={onChange}
+        onSubmit={onSubmit}
+        onCancel={onCancel}
+      />
     </Suspense>
   );
 };

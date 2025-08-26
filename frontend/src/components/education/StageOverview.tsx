@@ -27,6 +27,7 @@ import {
   Users
 } from 'lucide-react';
 import { stageService, Stage } from '@/services/stageService';
+import { log } from '@/utils/logger';
 import { useAuthStore } from '@/store/useAuthStore';
 import { entityRegistry } from '@/services/entityRegistry';
 import { toast } from 'sonner';
@@ -48,13 +49,13 @@ export function StageOverview() {
       const stagesData = await stageService.getAllStages();
       // Ensure stagesData is an array
       setStages(Array.isArray(stagesData) ? stagesData : []);
-      console.log('Loaded stages:', stagesData);
+      log.debug('StageOverview', 'Loaded stages', { count: stagesData.length });
       
       // Get user's current stage from entityRegistry
       try {
         const userStageInfo = await entityRegistry.getUserStageInfo();
         setCurrentUserStage(userStageInfo.pointAccount.currentStage);
-        console.log('User current stage:', userStageInfo.pointAccount.currentStage);
+        log.debug('StageOverview', 'User current stage loaded', { stage: userStageInfo.pointAccount.currentStage });
       } catch (error) {
         console.warn('Could not load user stage info, defaulting to stage 1:', error);
         setCurrentUserStage(1);

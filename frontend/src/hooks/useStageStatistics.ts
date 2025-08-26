@@ -10,6 +10,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { apiClient } from '@/services/apiClient';
+import { log } from '@/utils/logger';
 import { 
   type StatisticType, 
   type EntityType, 
@@ -98,7 +99,7 @@ export function useStageStatistics({ stageId, stageNumber, stageName, onShowAll 
     
     try {
       const endpoint = `${API_ENDPOINTS[config.entityType]}?activeFromStage=${stageNumber}`;
-      console.log(`Loading entities for ${statisticType} from ${endpoint}`);
+      log.debug('useStageStatistics', 'Loading entities', { statisticType, endpoint });
       
       const response = await apiClient.get(endpoint);
       let entities = response.data.data || [];
