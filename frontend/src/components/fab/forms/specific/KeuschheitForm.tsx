@@ -21,7 +21,7 @@ interface KeuschheitFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function KeuschheitForm({ data, onChange }: KeuschheitFormProps) {
+function KeuschheitForm({ data, onChange }: KeuschheitFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -181,3 +181,4 @@ export function KeuschheitForm({ data, onChange }: KeuschheitFormProps) {
     </div>
   );
 }
+export default KeuschheitForm;

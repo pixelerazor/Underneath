@@ -21,7 +21,7 @@ interface GeistFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function GeistForm({ data, onChange }: GeistFormProps) {
+function GeistForm({ data, onChange }: GeistFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -146,3 +146,4 @@ export function GeistForm({ data, onChange }: GeistFormProps) {
     </div>
   );
 }
+export default GeistForm;

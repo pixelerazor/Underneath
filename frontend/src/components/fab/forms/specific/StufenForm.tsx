@@ -21,7 +21,7 @@ interface StufenFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function StufenForm({ data, onChange }: StufenFormProps) {
+function StufenForm({ data, onChange }: StufenFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -198,3 +198,4 @@ export function StufenForm({ data, onChange }: StufenFormProps) {
     </div>
   );
 }
+export default StufenForm;

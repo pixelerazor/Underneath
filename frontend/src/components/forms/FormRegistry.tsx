@@ -258,16 +258,8 @@ export const FormLoader: React.FC<{
 }> = ({ formType, data, onChange, onSubmit, onCancel }) => {
   const config = FORM_REGISTRY[formType];
   
-  // Debug: Log the form being loaded
-  console.log('FormLoader: Loading', { 
-    formType, 
-    hasData: !!data, 
-    dataKeys: data ? Object.keys(data) : [], 
-    dataValues: data ? Object.entries(data).slice(0, 3) : [],  // Log first 3 entries
-    onChangeType: typeof onChange,
-    onSubmitType: typeof onSubmit,
-    onCancelType: typeof onCancel
-  });
+  // Debug: Log the form being loaded (can be removed in production)
+  // console.log('FormLoader: Loading', { formType, hasData: !!data });
   
   if (!config) {
     console.error('FormLoader: Form not found', { formType, availableTypes: Object.keys(FORM_REGISTRY) });

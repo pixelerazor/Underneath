@@ -21,7 +21,7 @@ interface TriggerFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function TriggerForm({ data, onChange }: TriggerFormProps) {
+function TriggerForm({ data, onChange }: TriggerFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -217,3 +217,4 @@ export function TriggerForm({ data, onChange }: TriggerFormProps) {
     </div>
   );
 }
+export default TriggerForm;

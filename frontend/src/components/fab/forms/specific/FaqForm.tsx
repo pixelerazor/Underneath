@@ -20,7 +20,7 @@ interface FaqFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function FaqForm({ data, onChange }: FaqFormProps) {
+function FaqForm({ data, onChange }: FaqFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -103,3 +103,4 @@ export function FaqForm({ data, onChange }: FaqFormProps) {
     </div>
   );
 }
+export default FaqForm;

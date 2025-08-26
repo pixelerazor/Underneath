@@ -20,7 +20,7 @@ interface NeueErkenntnisseFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function NeueErkenntnisseForm({ data, onChange }: NeueErkenntnisseFormProps) {
+function NeueErkenntnisseForm({ data, onChange }: NeueErkenntnisseFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -140,3 +140,4 @@ export function NeueErkenntnisseForm({ data, onChange }: NeueErkenntnisseFormPro
     </div>
   );
 }
+export default NeueErkenntnisseForm;

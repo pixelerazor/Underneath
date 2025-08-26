@@ -21,7 +21,7 @@ interface RueckfaelleFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function RueckfaelleForm({ data, onChange }: RueckfaelleFormProps) {
+function RueckfaelleForm({ data, onChange }: RueckfaelleFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -202,3 +202,4 @@ export function RueckfaelleForm({ data, onChange }: RueckfaelleFormProps) {
     </div>
   );
 }
+export default RueckfaelleForm;

@@ -20,7 +20,7 @@ interface AllgemeineInformationenFormProps {
   onChange: (data: Record<string, any>) => void;
 }
 
-export function AllgemeineInformationenForm({ data, onChange }: AllgemeineInformationenFormProps) {
+function AllgemeineInformationenForm({ data, onChange }: AllgemeineInformationenFormProps) {
   const updateField = (field: string, value: any) => {
     onChange({ [field]: value });
   };
@@ -92,3 +92,4 @@ export function AllgemeineInformationenForm({ data, onChange }: AllgemeineInform
     </div>
   );
 }
+export default AllgemeineInformationenForm;
