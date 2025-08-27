@@ -103,6 +103,7 @@ export interface EntityCreateData {
   targetValue?: number;
   assignedToId?: string;
   applicableToId?: string;
+  stageId?: string; // Required for stage isolation
 }
 
 export interface EntityUpdateData extends Partial<EntityCreateData> {

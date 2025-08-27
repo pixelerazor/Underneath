@@ -25,9 +25,9 @@ export function LongPressTarget({
   children,
   onLongPress,
   className,
-  threshold = 500,
+  threshold = 1000,
   disabled = false,
-  showProgressRing = true
+  showProgressRing = false
 }: LongPressTargetProps) {
   const longPress = useLongPress(onLongPress, {
     threshold,
@@ -56,7 +56,7 @@ export function LongPressTarget({
       {...handlers}
       className={cn(
         "relative cursor-pointer transition-all duration-200",
-        state.isLongPressing && "scale-[0.98]",
+        state.isLongPressing && "animate-shake z-10",
         className
       )}
       style={{

@@ -174,15 +174,15 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
       // Load all stages (now includes Sub settings from database)
       const allStages = await stageService.getAllStages();
       
-      // Add mock statistics for each stage
+      // Use real statistics from backend _count data
       const stagesWithStats = allStages.map(stage => ({
         ...stage,
         statistics: {
-          totalActive: Math.floor(Math.random() * 10) + 1,
-          completedToday: Math.floor(Math.random() * 3),
-          pendingTasks: Math.floor(Math.random() * 5),
-          activeRules: Math.floor(Math.random() * 8) + 2,
-          goalsProgress: Math.floor(Math.random() * 100)
+          totalActive: (stage._count?.Task || 0) + (stage._count?.Rule || 0) + (stage._count?.Goal || 0) + (stage._count?.Initiationsriten || 0),
+          completedToday: 0, // This would need additional API data
+          pendingTasks: stage._count?.Task || 0,
+          activeRules: stage._count?.Rule || 0,
+          goalsProgress: stage._count?.Goal || 0
         }
       })).sort((a, b) => a.stageNumber - b.stageNumber);
 
@@ -426,6 +426,11 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
           showExpansion={true}
           onShowAll={handleShowAll}
           showStageSystemEntities={true}
+          initialCounts={stage._count}
+          onRefresh={() => {
+            console.log('🔍 DEBUG: AllStagesView onRefresh called');
+            loadAllStagesData().catch(error => console.error('🔍 DEBUG: Error in loadAllStagesData:', error));
+          }}
         />
       </div>
     );

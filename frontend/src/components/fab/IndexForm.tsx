@@ -26,6 +26,8 @@ import { strafenService } from '../../services/strafenService';
 import { tpeService } from '../../services/tpeService';
 import { triggerService } from '../../services/triggerService';
 import { allgemeineInformationenService } from '../../services/allgemeineInformationenService';
+import { initiationsritenService } from '../../services/initiationsritenService';
+import { privilegienService } from '../../services/privilegienService';
 import { toast } from 'sonner';
 import { log } from '../../utils/logger';
 
@@ -33,14 +35,22 @@ interface IndexFormProps {
   onClose: () => void;
   initialFormType?: FormType;
   contextualDefaults?: Record<string, any>;
+  onSuccess?: () => void;
 }
 
-export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }: IndexFormProps) {
+export function IndexForm({ onClose, initialFormType, contextualDefaults = {}, onSuccess }: IndexFormProps) {
   const [selectedFormType, setSelectedFormType] = useState<FormType | null>(initialFormType || null);
   const [formData, setFormData] = useState<Record<string, any>>(contextualDefaults);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStage, setCurrentStage] = useState<number>(1);
   const { user } = useAuthStore();
+  
+  console.log('🔍 DEBUG IndexForm initialization:', {
+    initialFormType,
+    contextualDefaults,
+    formData,
+    stageIdFromContext: contextualDefaults.stageId
+  });
 
   // Load user's current stage on component mount (updated API paths)
   useEffect(() => {
@@ -93,6 +103,7 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
       category: data.category || 'general',
       activeFromStage: data.activeFromStage || currentStage, // Use specified or default to current stage
       activeToStage: data.activeToStage || null, // Optional end stage
+      stageId: data.stageId || null, // Include stageId for stage isolation
     };
 
     // Add type-specific fields
@@ -208,13 +219,14 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
           break;
 
         case 'strafen':
-          if (!data.userId) {
+          const strafenUserId = data.userId || user?.id;
+          if (!strafenUserId) {
             throw new Error('Benutzer-ID ist erforderlich für Strafen');
           }
           const punishment = await strafenService.createEntry({
             title: data.title,
             reason: data.reason,
-            userId: data.userId,
+            userId: strafenUserId,
             description: data.description,
             severity: data.severity,
             category: data.category,
@@ -226,9 +238,11 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
             wasConsensual: data.wasConsensual !== false,
             requiresFollowup: data.requiresFollowup || false,
             reaction: data.reaction,
-            effectiveness: data.effectiveness
+            effectiveness: data.effectiveness,
+            stageId: data.stageId || null
           });
           toast.success('Strafe erfolgreich erstellt!');
+          onSuccess?.();
           break;
 
         case 'tpe':
@@ -247,9 +261,11 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
             requiresFollowup: data.requiresFollowup || false,
             emotions: data.emotions,
             lessons: data.lessons,
-            improvements: data.improvements
+            improvements: data.improvements,
+            stageId: data.stageId || null
           });
           toast.success('TPE-Eintrag erfolgreich erstellt!');
+          onSuccess?.();
           break;
 
         case 'trigger':
@@ -291,9 +307,79 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
             name: data.stageName,
             description: data.description,
             pointsRequired: parseInt(data.pointsStart) || 0,
-            color: data.colorTheme
+            color: data.colorTheme,
+            isActive: data.isActive !== false
           });
           toast.success('Stufe erfolgreich erstellt!');
+          break;
+
+        case 'initiationsriten':
+          // Debug logging for sent data
+          const initiationsritenData = {
+            title: data.title || 'Neue Initiationsriten',
+            description: data.description,
+            ritualType: data.ritualType,
+            markingType: data.markingType,
+            bodyLocation: data.bodyLocation,
+            symbolism: data.symbolism,
+            actionSequence: data.actionSequence,
+            symbolMeaning: data.symbolMeaning,
+            repetitionSchedule: data.repetitionSchedule,
+            ceremonyLocation: data.ceremonyLocation,
+            participants: data.participants,
+            ceremonyDuration: data.ceremonyDuration,
+            ceremonyElements: data.ceremonyElements,
+            behaviorDescription: data.behaviorDescription,
+            behaviorDuration: data.behaviorDuration,
+            behaviorFrequency: data.behaviorFrequency,
+            customDefinition: data.customDefinition,
+            timing: data.timing,
+            documentation: data.documentation,
+            requiresPreparation: data.requiresPreparation || false,
+            requiresAftercare: data.requiresAftercare || false,
+            preparationDetails: data.preparationDetails,
+            aftercareDetails: data.aftercareDetails,
+            explicitConsent: data.explicitConsent !== false, // Default to true for safety
+            hardLimits: data.hardLimits,
+            exitClause: data.exitClause,
+            medicalConsiderations: data.medicalConsiderations,
+            reversibility: data.reversibility,
+            reversibilityDetails: data.reversibilityDetails,
+            activeFromStage: data.activeFromStage || currentStage,
+            activeToStage: data.activeToStage || null,
+            stageId: data.stageId || null
+          };
+          
+          console.log('🔍 DEBUG: Sending Initiationsriten data:', JSON.stringify(initiationsritenData, null, 2));
+          
+          const initiationsriten = await initiationsritenService.createInitiationsriten(initiationsritenData);
+          console.log('🔍 DEBUG: Initiationsriten created successfully:', initiationsriten);
+          toast.success('Initiationsriten erfolgreich erstellt!');
+          break;
+
+        case 'privilegien':
+          const privilegData = {
+            title: data.title,
+            description: data.description,
+            category: data.category,
+            type: data.type,
+            conditions: data.conditions,
+            duration: data.duration,
+            pointsRequired: data.pointsRequired ? parseInt(data.pointsRequired) : null,
+            level: data.level ? parseInt(data.level) : null,
+            canRevoke: data.canRevoke !== false,
+            autoExpires: data.autoExpires || false,
+            expiresAfter: data.expiresAfter,
+            activeFromStage: data.activeFromStage || currentStage,
+            activeToStage: data.activeToStage || null,
+            grantedToId: data.grantedToId,
+            stageId: data.stageId
+          };
+          
+          const privileg = await privilegienService.createEntry(privilegData);
+          console.log('🔍 DEBUG: Privileg created successfully:', privileg);
+          toast.success('Privileg erfolgreich erstellt!');
+          onSuccess?.();
           break;
 
         default:
@@ -316,7 +402,8 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
         pointsPenalty: parseInt(data.pointsPenalty) || 10,
         activeFromStage: data.activeFromStage || currentStage,
         activeToStage: data.activeToStage || null,
-        applicableToId: data.applicableToId || null
+        applicableToId: data.applicableToId || null,
+        stageId: data.stageId || null
       };
 
       const response = await apiClient.post('/rules', ruleData);
@@ -333,6 +420,14 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
     const hasRequiredData = selectedFormType === 'neue_stufe' 
       ? formData.stageName && formData.stageName.trim().length > 0
       : formData.title && formData.title.trim().length > 0;
+    
+    console.log('🔍 DEBUG handleSubmit:', {
+      selectedFormType,
+      hasRequiredData,
+      formData,
+      stageIdInFormData: formData.stageId,
+      user: user?.email || 'No user'
+    });
     
     if (!selectedFormType || !hasRequiredData) {
       console.error('Missing required form data');
@@ -364,7 +459,9 @@ export function IndexForm({ onClose, initialFormType, contextualDefaults = {} }:
         await handleNewEntitySubmission(selectedFormType, formData);
       }
       
+      console.log('🔍 DEBUG: About to call onClose');
       onClose();
+      console.log('🔍 DEBUG: onClose called successfully');
     } catch (error: any) {
       console.error('Form submission error:', error);
       

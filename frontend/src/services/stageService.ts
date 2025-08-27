@@ -17,10 +17,11 @@ export interface Stage {
   createdAt: string;
   updatedAt: string;
   _count?: {
-    tasks: number;
-    rules: number;
-    goals: number;
-    progressions: number;
+    Task: number;
+    Rule: number;
+    Goal: number;
+    Initiationsriten: number;
+    StageProgression: number;
   };
 }
 
@@ -30,6 +31,7 @@ export interface CreateStageData {
   description?: string;
   pointsRequired: number;
   color?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateStageData {
@@ -37,6 +39,7 @@ export interface UpdateStageData {
   description?: string;
   pointsRequired?: number;
   color?: string;
+  isActive?: boolean;
   isSubActive?: boolean;
   isSubVisible?: boolean;
   isSubLocked?: boolean;

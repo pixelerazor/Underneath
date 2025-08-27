@@ -24,6 +24,7 @@ interface Stage {
   name: string;
   pointsRequired: number;
   color?: string;
+  isActive?: boolean;
 }
 
 export function SimplifiedStageSelector({ 
@@ -63,9 +64,10 @@ export function SimplifiedStageSelector({
         }
       });
       
-      // Sort by stage number
-      allStages.sort((a, b) => a.stageNumber - b.stageNumber);
-      setAvailableStages(allStages);
+      // Filter only active stages and sort by stage number
+      const activeStages = allStages.filter(stage => stage.isActive !== false);
+      activeStages.sort((a, b) => a.stageNumber - b.stageNumber);
+      setAvailableStages(activeStages);
     } catch (error) {
       console.error('Error loading stages:', error);
       // Fallback to base stages only

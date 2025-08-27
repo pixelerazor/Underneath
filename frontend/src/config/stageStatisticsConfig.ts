@@ -61,8 +61,8 @@ export const API_ENDPOINTS: Record<EntityType, string> = {
   tasks: '/tasks',
   rules: '/rules', 
   goals: '/goals',
-  initiationsriten: '/tasks', // Temp: Use tasks until API exists
-  privilegien: '/rules', // Temp: Use rules until API exists
+  initiationsriten: '/initiationsriten',
+  privilegien: '/privilegien',
   strafen: '/strafen',
   tpe: '/tpe'
 };

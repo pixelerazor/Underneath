@@ -1,10 +1,10 @@
 /**
  * Privilegien Form Component
  * 
- * Form for creating privileges
+ * Form for creating privileges and special rights
  * 
  * @author Underneath Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import React from 'react';
@@ -48,7 +48,7 @@ function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Beschreibung *</Label>
+            <Label htmlFor="description">Beschreibung</Label>
             <Textarea
               id="description"
               placeholder="Was beinhaltet dieses Privileg?"
@@ -59,7 +59,7 @@ function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Kategorie *</Label>
+            <Label htmlFor="category">Kategorie</Label>
             <Select value={data.category || ''} onValueChange={(value) => updateField('category', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Kategorie auswählen" />
@@ -75,35 +75,77 @@ function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="type">Typ</Label>
+            <Select value={data.type || ''} onValueChange={(value) => updateField('type', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Typ auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="permanent">Dauerhaft</SelectItem>
+                <SelectItem value="earned">Verdient</SelectItem>
+                <SelectItem value="granted">Gewährt</SelectItem>
+                <SelectItem value="conditional">Bedingt</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fromStage">Ab Stufe *</Label>
+              <Label htmlFor="activeFromStage">Ab Stufe</Label>
               <Input
-                id="fromStage"
+                id="activeFromStage"
                 type="number"
                 min="1"
                 max="10"
                 placeholder="z.B. 2"
-                value={data.fromStage || ''}
-                onChange={(e) => updateField('fromStage', e.target.value)}
+                value={data.activeFromStage || ''}
+                onChange={(e) => updateField('activeFromStage', parseInt(e.target.value) || null)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pointsCost">Kosten (Punkte)</Label>
+              <Label htmlFor="activeToStage">Bis Stufe</Label>
               <Input
-                id="pointsCost"
+                id="activeToStage"
+                type="number"
+                min="1"
+                max="10"
+                placeholder="z.B. 5 (optional)"
+                value={data.activeToStage || ''}
+                onChange={(e) => updateField('activeToStage', parseInt(e.target.value) || null)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pointsRequired">Benötigte Punkte</Label>
+              <Input
+                id="pointsRequired"
                 type="number"
                 min="0"
                 placeholder="z.B. 50"
-                value={data.pointsCost || ''}
-                onChange={(e) => updateField('pointsCost', e.target.value)}
+                value={data.pointsRequired || ''}
+                onChange={(e) => updateField('pointsRequired', parseInt(e.target.value) || null)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="level">Level (1-5)</Label>
+              <Input
+                id="level"
+                type="number"
+                min="1"
+                max="5"
+                placeholder="z.B. 3"
+                value={data.level || ''}
+                onChange={(e) => updateField('level', parseInt(e.target.value) || null)}
               />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="duration">Gültigkeitsdauer</Label>
-            <Select value={data.duration || 'permanent'} onValueChange={(value) => updateField('duration', value)}>
+            <Select value={data.duration || ''} onValueChange={(value) => updateField('duration', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Dauer auswählen" />
               </SelectTrigger>
@@ -117,63 +159,54 @@ function PrivilegienForm({ data, onChange }: PrivilegienFormProps) {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="conditions">Bedingungen</Label>
+            <Textarea
+              id="conditions"
+              placeholder="Unter welchen Bedingungen gilt dieses Privileg?"
+              rows={2}
+              value={data.conditions || ''}
+              onChange={(e) => updateField('conditions', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="expiresAfter">Läuft ab nach</Label>
+            <Input
+              id="expiresAfter"
+              placeholder="z.B. 30 Tage, 1 Monat"
+              value={data.expiresAfter || ''}
+              onChange={(e) => updateField('expiresAfter', e.target.value)}
+            />
+          </div>
+
           <div className="space-y-3">
             <Label>Eigenschaften</Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="isEarned"
-                  checked={data.isEarned || false}
-                  onCheckedChange={(checked) => updateField('isEarned', checked)}
+                  id="canRevoke"
+                  checked={data.canRevoke !== false}
+                  onCheckedChange={(checked) => updateField('canRevoke', checked)}
                 />
-                <Label htmlFor="isEarned" className="text-sm">Muss verdient werden</Label>
+                <Label htmlFor="canRevoke" className="text-sm">Entziehbar</Label>
               </div>
               
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="isRevocable"
-                  checked={data.isRevocable || false}
-                  onCheckedChange={(checked) => updateField('isRevocable', checked)}
+                  id="autoExpires"
+                  checked={data.autoExpires || false}
+                  onCheckedChange={(checked) => updateField('autoExpires', checked)}
                 />
-                <Label htmlFor="isRevocable" className="text-sm">Entziehbar</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="requiresApproval"
-                  checked={data.requiresApproval || false}
-                  onCheckedChange={(checked) => updateField('requiresApproval', checked)}
-                />
-                <Label htmlFor="requiresApproval" className="text-sm">Genehmigung erforderlich</Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isConditional"
-                  checked={data.isConditional || false}
-                  onCheckedChange={(checked) => updateField('isConditional', checked)}
-                />
-                <Label htmlFor="isConditional" className="text-sm">Bedingungen</Label>
+                <Label htmlFor="autoExpires" className="text-sm">Läuft automatisch ab</Label>
               </div>
             </div>
           </div>
-
-          {data.isConditional && (
-            <div className="space-y-2">
-              <Label htmlFor="conditions">Bedingungen</Label>
-              <Textarea
-                id="conditions"
-                placeholder="Unter welchen Bedingungen gilt dieses Privileg?"
-                rows={2}
-                value={data.conditions || ''}
-                onChange={(e) => updateField('conditions', e.target.value)}
-              />
-            </div>
-          )}
 
         </CardContent>
       </Card>
     </div>
   );
 }
+
 export default PrivilegienForm;

@@ -25,9 +25,10 @@ interface EntityCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
   context: EntityContext | null;
+  onSuccess?: () => void;
 }
 
-export function EntityCreateModal({ isOpen, onClose, context }: EntityCreateModalProps) {
+export function EntityCreateModal({ isOpen, onClose, context, onSuccess }: EntityCreateModalProps) {
   if (!context) return null;
 
   // Map entity types to form types
@@ -127,6 +128,7 @@ export function EntityCreateModal({ isOpen, onClose, context }: EntityCreateModa
             formType={getFormType(context.entityType)}
             context={context}
             onClose={onClose}
+            onSuccess={onSuccess}
           />
         </div>
       </DialogContent>
@@ -139,19 +141,30 @@ interface EntityCreateFormWrapperProps {
   formType: FormType;
   context: EntityContext;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-function EntityCreateFormWrapper({ formType, context, onClose }: EntityCreateFormWrapperProps) {
+function EntityCreateFormWrapper({ formType, context, onClose, onSuccess }: EntityCreateFormWrapperProps) {
+  const contextualDefaults = {
+    stageId: context.stageId,
+    ...context.defaultValues
+  };
+  
+  console.log('🔍 DEBUG EntityCreateFormWrapper:', {
+    formType,
+    contextStageId: context.stageId,
+    contextStageName: context.stageName,
+    contextStageNumber: context.stageNumber,
+    contextualDefaults
+  });
+  
   return (
     <div className="p-6">
       <IndexForm 
         onClose={onClose}
+        onSuccess={onSuccess}
         initialFormType={formType}
-        contextualDefaults={{
-          activeFromStage: context.stageNumber || 1,
-          stageId: context.stageId,
-          ...context.defaultValues
-        }}
+        contextualDefaults={contextualDefaults}
       />
     </div>
   );

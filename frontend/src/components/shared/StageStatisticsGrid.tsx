@@ -9,7 +9,7 @@
  * @version 1.0.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -36,6 +36,14 @@ export interface StageStatisticsGridProps {
   className?: string;
   onShowAll?: (entityType: any, entities: any[], entityTitle: string) => void;
   showStageSystemEntities?: boolean;
+  initialCounts?: {
+    Task?: number;
+    Rule?: number;
+    Goal?: number;
+    Initiationsriten?: number;
+    StageProgression?: number;
+  };
+  onRefresh?: () => void;
 }
 
 export function StageStatisticsGrid({
@@ -46,10 +54,13 @@ export function StageStatisticsGrid({
   showExpansion = true,
   className = "",
   onShowAll,
-  showStageSystemEntities = true
+  showStageSystemEntities = true,
+  initialCounts,
+  onRefresh
 }: StageStatisticsGridProps) {
   const [createModalContext, setCreateModalContext] = useState<EntityContext | null>(null);
-  
+  const previousModalContext = useRef<EntityContext | null>(null);
+
   const {
     toggleCardExpansion,
     showAllEntities,
@@ -61,7 +72,22 @@ export function StageStatisticsGrid({
     openEntityDrawer,
     closeEntityDrawer,
     drawerEntity
-  } = useStageStatistics({ stageId, stageNumber, stageName, onShowAll });
+  } = useStageStatistics({ stageId, stageNumber, stageName, onShowAll, initialCounts });
+
+  // Auto-refresh when modal closes after being open
+  useEffect(() => {
+    if (previousModalContext.current !== null && createModalContext === null) {
+      // Small delay to ensure any API calls have finished
+      setTimeout(() => {
+        if (onRefresh) {
+          onRefresh();
+        } else {
+          refreshEntityCounts();
+        }
+      }, 1000);
+    }
+    previousModalContext.current = createModalContext;
+  }, [createModalContext, onRefresh, refreshEntityCounts]);
 
   // Map statistic types to entity types
   const getEntityTypeFromStatistic = (statisticType: StatisticType): 'tasks' | 'rules' | 'goals' | 'initiationsriten' | 'privilegien' | 'strafen' | 'tpe' | null => {
@@ -96,19 +122,17 @@ export function StageStatisticsGrid({
       stageName,
       stageNumber,
       defaultValues: {
-        activeFromStage: stageNumber,
         stageId
       }
     };
 
-    console.log(`🎯 Long-press detected: Creating ${entityType} for Stage ${stageNumber} (${stageName})`);
+    // Long-press detected: Creating entity
     setCreateModalContext(context);
   };
 
   const handleCloseModal = () => {
     setCreateModalContext(null);
-    // Refresh counts after creation
-    refreshEntityCounts();
+    // The useEffect will handle the refresh automatically
   };
 
   const renderExpandedEntities = (entities: any[], statisticType: StatisticType) => {
@@ -187,7 +211,7 @@ export function StageStatisticsGrid({
   // Combine all cards into one array for unified display
   const allCards = [
     ...STAGE_STATISTICS_CONFIG.map(config => ({ ...config, isMainStat: true })),
-    ...(showStageSystemEntities ? STAGE_SYSTEM_ENTITIES.map(config => ({ ...config, isMainStat: false })) : [])
+    ...(showStageSystemEntities ? STAGE_SYSTEM_ENTITIES.map(config => ({ ...config, isMainStat: true })) : [])
   ];
 
   // Split into two rows of 3 cards each
@@ -264,15 +288,13 @@ export function StageStatisticsGrid({
           entity={drawerEntity.entity}
           entityType={drawerEntity.entityType}
           entityTitle={drawerEntity.entityTitle}
-          onEntityUpdated={(updatedEntity) => {
+          onEntityUpdated={() => {
             // Refresh entity counts after update
             refreshEntityCounts();
-            console.log('Entity updated:', updatedEntity);
           }}
-          onEntityDeleted={(entityId) => {
+          onEntityDeleted={() => {
             // Refresh entity counts after deletion
             refreshEntityCounts();
-            console.log('Entity deleted:', entityId);
           }}
         />
       )}
@@ -282,6 +304,7 @@ export function StageStatisticsGrid({
         isOpen={!!createModalContext}
         onClose={handleCloseModal}
         context={createModalContext}
+        onSuccess={refreshEntityCounts}
       />
     </div>
   );
