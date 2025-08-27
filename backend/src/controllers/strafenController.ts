@@ -1,12 +1,13 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/errors';
 
 export class StrafenController {
-  static async getAllPunishments(req: Request, res: Response) {
+  static async getAllPunishments(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { severity, category, userId: targetUserId } = req.query;
-      const currentUserId = req.user?.userId;
+      const { severity, category, userId: targetUserId, stageId } = req.query;
+      const currentUserId = req.user?.id;
       const userRole = req.user?.role;
       
       if (!currentUserId) {
@@ -25,17 +26,22 @@ export class StrafenController {
       if (severity) whereClause.severity = severity as string;
       if (category) whereClause.category = category as string;
 
+      // Stage isolation: Only return strafen for specific stage
+      if (stageId) {
+        whereClause.stageId = stageId as string;
+      }
+
       const punishments = await prisma.strafe.findMany({
         where: whereClause,
         include: {
-          user: {
+          User_Strafe_userIdToUser: {
             select: {
               id: true,
               displayName: true,
               role: true
             }
           },
-          administrator: {
+          User_Strafe_adminByToUser: {
             select: {
               id: true,
               displayName: true,
@@ -43,19 +49,26 @@ export class StrafenController {
             }
           }
         },
-        orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }]
+        orderBy: [{ createdAt: 'desc' }]
       });
 
-      res.json(punishments);
-    } catch (error) {
-      throw new AppError('Error fetching punishments', 500, error);
+      res.json({
+        success: true,
+        data: punishments
+      });
+    } catch (error: any) {
+      console.error('Error fetching punishments:', error);
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to fetch punishments' });
     }
   }
 
-  static async getPunishmentById(req: Request, res: Response) {
+  static async getPunishmentById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw new AppError('User not authenticated', 401);
@@ -64,14 +77,14 @@ export class StrafenController {
       const punishment = await prisma.strafe.findUnique({
         where: { id },
         include: {
-          user: {
+          User_Strafe_userIdToUser: {
             select: {
               id: true,
               displayName: true,
               role: true
             }
           },
-          administrator: {
+          User_Strafe_adminByToUser: {
             select: {
               id: true,
               displayName: true,
@@ -87,23 +100,40 @@ export class StrafenController {
 
       // Check permissions
       if (punishment.userId !== userId && punishment.adminBy !== userId && req.user?.role !== 'ADMIN') {
-        throw new AppError('Insufficient permissions', 403);
+        return res.status(403).json({ error: 'Insufficient permissions' });
       }
 
-      res.json(punishment);
-    } catch (error) {
-      throw new AppError('Error fetching punishment', 500, error);
+      res.json({
+        success: true,
+        data: punishment
+      });
+    } catch (error: any) {
+      console.error('Error fetching punishment:', error);
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to fetch punishment' });
     }
   }
 
-  static async createPunishment(req: Request, res: Response) {
+  static async createPunishment(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const punishmentData = req.body;
-      const adminBy = req.user?.userId;
+      const adminBy = req.user?.id;
 
       if (!adminBy) {
         throw new AppError('User not authenticated', 401);
       }
+
+      if (!punishmentData.stageId) {
+        throw new AppError('stageId is required for stage isolation', 400);
+      }
+
+      // Remove fields that shouldn't be set directly
+      delete punishmentData.id;
+      delete punishmentData.createdAt;
+      delete punishmentData.updatedAt;
+      delete punishmentData.adminBy;
 
       const punishment = await prisma.strafe.create({
         data: {
@@ -111,14 +141,14 @@ export class StrafenController {
           adminBy
         },
         include: {
-          user: {
+          User_Strafe_userIdToUser: {
             select: {
               id: true,
               displayName: true,
               role: true
             }
           },
-          administrator: {
+          User_Strafe_adminByToUser: {
             select: {
               id: true,
               displayName: true,
@@ -128,17 +158,24 @@ export class StrafenController {
         }
       });
 
-      res.status(201).json(punishment);
-    } catch (error) {
-      throw new AppError('Error creating punishment', 500, error);
+      res.status(201).json({
+        success: true,
+        data: punishment
+      });
+    } catch (error: any) {
+      console.error('Error creating punishment:', error);
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      res.status(500).json({ error: 'Failed to create punishment' });
     }
   }
 
-  static async updatePunishment(req: Request, res: Response) {
+  static async updatePunishment(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw new AppError('User not authenticated', 401);
@@ -154,21 +191,28 @@ export class StrafenController {
 
       // Only admin or administrator can update
       if (existingPunishment.adminBy !== userId && req.user?.role !== 'ADMIN') {
-        throw new AppError('Insufficient permissions', 403);
+        return res.status(403).json({ error: 'Insufficient permissions' });
       }
+
+      // Remove fields that shouldn't be updated directly
+      delete updateData.id;
+      delete updateData.createdAt;
+      delete updateData.updatedAt;
+      delete updateData.adminBy;
+      delete updateData.userId;
 
       const updatedPunishment = await prisma.strafe.update({
         where: { id },
         data: updateData,
         include: {
-          user: {
+          User_Strafe_userIdToUser: {
             select: {
               id: true,
               displayName: true,
               role: true
             }
           },
-          administrator: {
+          User_Strafe_adminByToUser: {
             select: {
               id: true,
               displayName: true,
@@ -178,16 +222,23 @@ export class StrafenController {
         }
       });
 
-      res.json(updatedPunishment);
-    } catch (error) {
-      throw new AppError('Error updating punishment', 500, error);
+      res.json({
+        success: true,
+        data: updatedPunishment
+      });
+    } catch (error: any) {
+      console.error('Error updating punishment:', error);
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Punishment not found' });
+      }
+      res.status(500).json({ error: 'Failed to update punishment' });
     }
   }
 
-  static async deletePunishment(req: Request, res: Response) {
+  static async deletePunishment(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw new AppError('User not authenticated', 401);
@@ -202,16 +253,23 @@ export class StrafenController {
       }
 
       if (existingPunishment.adminBy !== userId && req.user?.role !== 'ADMIN') {
-        throw new AppError('Insufficient permissions', 403);
+        return res.status(403).json({ error: 'Insufficient permissions' });
       }
 
       await prisma.strafe.delete({
         where: { id }
       });
 
-      res.status(204).send();
-    } catch (error) {
-      throw new AppError('Error deleting punishment', 500, error);
+      res.json({
+        success: true,
+        message: 'Punishment deleted successfully'
+      });
+    } catch (error: any) {
+      console.error('Error deleting punishment:', error);
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Punishment not found' });
+      }
+      res.status(500).json({ error: 'Failed to delete punishment' });
     }
   }
 }

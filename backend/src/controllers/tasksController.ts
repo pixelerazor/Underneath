@@ -13,14 +13,17 @@ export const tasksController = {
         category, 
         priority, 
         pointsReward, 
-        dueDate, 
-        activeFromStage, 
-        activeToStage,
+        dueDate,
+        stageId,
         assignedToId 
       } = req.body;
 
       if (!title) {
         throw new AppError('Title is required', 400);
+      }
+
+      if (!stageId) {
+        throw new AppError('stageId is required for stage isolation', 400);
       }
 
       const task = await prisma.task.create({
@@ -31,10 +34,9 @@ export const tasksController = {
           priority: priority || 'MEDIUM',
           pointsReward: parseInt(pointsReward) || 10,
           dueDate: dueDate ? new Date(dueDate) : null,
-          activeFromStage: parseInt(activeFromStage) || 1,
-          activeToStage: activeToStage ? parseInt(activeToStage) : null,
+          stageId,
           assignedToId,
-          creatorId: req.user?.userId,
+          creatorId: req.user?.id,
         },
       });
 
@@ -56,16 +58,13 @@ export const tasksController = {
   // Get all tasks
   async getAllTasks(req: AuthenticatedRequest, res: Response) {
     try {
-      const { activeFromStage, activeToStage, category, status } = req.query;
+      const { stageId, category, status } = req.query;
       
       const whereClause: any = {};
       
-      if (activeFromStage) {
-        whereClause.activeFromStage = parseInt(activeFromStage as string);
-      }
-      
-      if (activeToStage) {
-        whereClause.activeToStage = parseInt(activeToStage as string);
+      // Stage isolation: Only return tasks for specific stage
+      if (stageId) {
+        whereClause.stageId = stageId as string;
       }
       
       if (category) {
@@ -79,12 +78,11 @@ export const tasksController = {
       const tasks = await prisma.task.findMany({
         where: whereClause,
         orderBy: [
-          { activeFromStage: 'asc' },
           { dueDate: 'asc' },
           { createdAt: 'desc' }
         ],
         include: {
-          creator: {
+          User_Task_creatorIdToUser: {
             select: {
               id: true,
               email: true,
@@ -116,7 +114,7 @@ export const tasksController = {
       const task = await prisma.task.findUnique({
         where: { id },
         include: {
-          creator: {
+          User_Task_creatorIdToUser: {
             select: {
               id: true,
               email: true,
@@ -160,14 +158,6 @@ export const tasksController = {
       if (updateData.pointsReward) {
         updateData.pointsReward = parseInt(updateData.pointsReward);
       }
-      
-      if (updateData.activeFromStage) {
-        updateData.activeFromStage = parseInt(updateData.activeFromStage);
-      }
-      
-      if (updateData.activeToStage) {
-        updateData.activeToStage = parseInt(updateData.activeToStage);
-      }
 
       // Convert date fields
       if (updateData.dueDate) {
@@ -178,7 +168,7 @@ export const tasksController = {
         where: { id },
         data: updateData,
         include: {
-          creator: {
+          User_Task_creatorIdToUser: {
             select: {
               id: true,
               email: true,

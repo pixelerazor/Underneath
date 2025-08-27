@@ -14,14 +14,17 @@ export const goalsController = {
         priority, 
         pointsReward, 
         targetValue, 
-        deadline, 
-        activeFromStage, 
-        activeToStage,
+        deadline,
+        stageId,
         assignedToId 
       } = req.body;
 
       if (!title) {
         throw new AppError('Title is required', 400);
+      }
+
+      if (!stageId) {
+        throw new AppError('stageId is required for stage isolation', 400);
       }
 
       const goal = await prisma.goal.create({
@@ -33,8 +36,7 @@ export const goalsController = {
           pointsReward: parseInt(pointsReward) || 50,
           targetValue: targetValue ? parseInt(targetValue) : null,
           deadline: deadline ? new Date(deadline) : null,
-          activeFromStage: parseInt(activeFromStage) || 1,
-          activeToStage: activeToStage ? parseInt(activeToStage) : null,
+          stageId,
           assignedToId,
           creatorId: req.user?.userId,
         },
@@ -58,16 +60,13 @@ export const goalsController = {
   // Get all goals
   async getAllGoals(req: AuthenticatedRequest, res: Response) {
     try {
-      const { activeFromStage, activeToStage, category } = req.query;
+      const { stageId, category } = req.query;
       
       const whereClause: any = {};
       
-      if (activeFromStage) {
-        whereClause.activeFromStage = parseInt(activeFromStage as string);
-      }
-      
-      if (activeToStage) {
-        whereClause.activeToStage = parseInt(activeToStage as string);
+      // Stage isolation: Only return goals for specific stage
+      if (stageId) {
+        whereClause.stageId = stageId as string;
       }
       
       if (category) {
@@ -77,7 +76,6 @@ export const goalsController = {
       const goals = await prisma.goal.findMany({
         where: whereClause,
         orderBy: [
-          { activeFromStage: 'asc' },
           { createdAt: 'desc' }
         ],
         include: {
@@ -162,13 +160,6 @@ export const goalsController = {
         updateData.targetValue = parseInt(updateData.targetValue);
       }
       
-      if (updateData.activeFromStage) {
-        updateData.activeFromStage = parseInt(updateData.activeFromStage);
-      }
-      
-      if (updateData.activeToStage) {
-        updateData.activeToStage = parseInt(updateData.activeToStage);
-      }
 
       // Convert date fields
       if (updateData.deadline) {

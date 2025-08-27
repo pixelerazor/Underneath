@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/errors';
+import crypto from 'crypto';
 
 export class AllgemeineInformationenController {
   static async getAllInformation(req: Request, res: Response) {
@@ -15,7 +16,7 @@ export class AllgemeineInformationenController {
       const information = await prisma.allgemeineInformation.findMany({
         where: whereClause,
         include: {
-          creator: {
+          User: {
             select: {
               id: true,
               displayName: true,
@@ -39,7 +40,7 @@ export class AllgemeineInformationenController {
       const information = await prisma.allgemeineInformation.findUnique({
         where: { id },
         include: {
-          creator: {
+          User: {
             select: {
               id: true,
               displayName: true,
@@ -70,16 +71,18 @@ export class AllgemeineInformationenController {
 
       const information = await prisma.allgemeineInformation.create({
         data: {
+          id: crypto.randomUUID(),
           title,
           content,
           category,
           priority: priority || 'medium',
           isPublic: isPublic !== false,
           tags: tags || [],
-          creatorId
+          creatorId,
+          updatedAt: new Date()
         },
         include: {
-          creator: {
+          User: {
             select: {
               id: true,
               displayName: true,
@@ -121,7 +124,7 @@ export class AllgemeineInformationenController {
         where: { id },
         data: updateData,
         include: {
-          creator: {
+          User: {
             select: {
               id: true,
               displayName: true,

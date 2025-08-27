@@ -3,8 +3,13 @@ import jwt from 'jsonwebtoken';
 
 interface JwtPayload {
   userId: string;
+  id: string; // Add id field for compatibility 
   email: string;
   role: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
 }
 
 declare global {
@@ -26,7 +31,12 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as JwtPayload;
-    req.user = decoded;
+    // Ensure both userId and id are set for compatibility
+    req.user = {
+      ...decoded,
+      id: decoded.userId || decoded.id,
+      userId: decoded.userId || decoded.id
+    };
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {

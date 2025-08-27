@@ -8,12 +8,18 @@ export class RulesController {
     try {
       const userId = req.user?.userId;
       const userRole = req.user?.role;
+      const { stageId } = req.query;
 
       if (!userId) {
         throw new AppError('Benutzer nicht authentifiziert', 401);
       }
 
       let whereClause: any = { isActive: true };
+
+      // Stage isolation: Only return rules for specific stage
+      if (stageId) {
+        whereClause.stageId = stageId as string;
+      }
 
       // Role-based filtering
       if (userRole === 'SUB') {
@@ -23,11 +29,11 @@ export class RulesController {
       const rules = await prisma.rule.findMany({
         where: whereClause,
         include: {
-          creator: { select: { displayName: true, role: true } },
-          applicableTo: { select: { displayName: true, role: true } },
-          violations: { take: 3, orderBy: { occurredAt: 'desc' } }
+          User_Rule_creatorIdToUser: { select: { displayName: true, role: true } },
+          User_Rule_applicableToIdToUser: { select: { displayName: true, role: true } },
+          RuleViolation: { take: 3, orderBy: { occurredAt: 'desc' } }
         },
-        orderBy: [{ activeFromStage: 'asc' }, { severity: 'desc' }]
+        orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }]
       });
 
       res.json({
@@ -59,9 +65,9 @@ export class RulesController {
       const rule = await prisma.rule.findFirst({
         where: whereClause,
         include: {
-          creator: { select: { displayName: true, role: true } },
-          applicableTo: { select: { displayName: true, role: true } },
-          violations: { orderBy: { occurredAt: 'desc' } }
+          User_Rule_creatorIdToUser: { select: { displayName: true, role: true } },
+          User_Rule_applicableToIdToUser: { select: { displayName: true, role: true } },
+          RuleViolation: { orderBy: { occurredAt: 'desc' } }
         }
       });
 
@@ -92,13 +98,20 @@ export class RulesController {
         category,
         severity,
         pointsPenalty,
-        activeFromStage,
-        activeToStage,
+        stageId,
         applicableToId
       } = req.body;
 
       if (!title || !category || !severity) {
         throw new AppError('Title, Kategorie und Schweregrad sind erforderlich', 400);
+      }
+
+      if (!description) {
+        throw new AppError('Beschreibung ist erforderlich', 400);
+      }
+
+      if (!stageId) {
+        throw new AppError('stageId ist für Stage-Isolation erforderlich', 400);
       }
 
       const rule = await prisma.rule.create({
@@ -108,16 +121,14 @@ export class RulesController {
           category,
           severity,
           pointsPenalty: Math.abs(pointsPenalty || 10),
-          activeFromStage: activeFromStage || 1,
-          activeToStage,
+          stageId,
           creatorId: userId,
           applicableToId,
-          isActive: true,
-          status: 'ACTIVE'
+          isActive: true
         },
         include: {
-          creator: { select: { displayName: true, role: true } },
-          applicableTo: { select: { displayName: true, role: true } }
+          User_Rule_creatorIdToUser: { select: { displayName: true, role: true } },
+          User_Rule_applicableToIdToUser: { select: { displayName: true, role: true } }
         }
       });
 
@@ -156,8 +167,8 @@ export class RulesController {
         where: { id: ruleId },
         data: req.body,
         include: {
-          creator: { select: { displayName: true, role: true } },
-          applicableTo: { select: { displayName: true, role: true } }
+          User_Rule_creatorIdToUser: { select: { displayName: true, role: true } },
+          User_Rule_applicableToIdToUser: { select: { displayName: true, role: true } }
         }
       });
 

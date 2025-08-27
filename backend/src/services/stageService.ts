@@ -1,5 +1,6 @@
 // backend/src/services/stageService.ts
 import { CustomError } from '../utils/errors';
+import crypto from 'crypto';
 import { PointsService } from './pointsService';
 import { prisma } from '../lib/prisma';
 
@@ -37,7 +38,11 @@ export class StageService {
     }
 
     const stage = await prisma.stage.create({
-      data: stageData
+      data: {
+        id: crypto.randomUUID(),
+        ...stageData,
+        updatedAt: new Date()
+      }
     });
 
     // Invalidate points service cache so it reloads stage thresholds
@@ -83,10 +88,14 @@ export class StageService {
       include: {
         _count: {
           select: {
-            tasks: true,
-            rules: true,
-            goals: true,
-            progressions: true
+            Task: true,
+            Rule: true,
+            Goal: true,
+            Initiationsriten: true,
+            StageProgression: true,
+            Privileg: true,
+            Strafe: true,
+            TPEEintrag: true
           }
         }
       }
@@ -99,33 +108,33 @@ export class StageService {
     const stage = await prisma.stage.findUnique({
       where: { id: stageId },
       include: {
-        tasks: {
+        Task: {
           where: { status: 'ACTIVE' },
           include: {
-            creator: { select: { displayName: true, email: true } },
-            assignedTo: { select: { displayName: true, email: true } }
+            User_Task_creatorIdToUser: { select: { displayName: true, email: true } },
+            User_Task_assignedToIdToUser: { select: { displayName: true, email: true } }
           }
         },
-        rules: {
+        Rule: {
           where: { isActive: true },
           include: {
-            creator: { select: { displayName: true, email: true } },
-            applicableTo: { select: { displayName: true, email: true } },
-            violations: { take: 5, orderBy: { occurredAt: 'desc' } }
+            User_Rule_creatorIdToUser: { select: { displayName: true, email: true } },
+            User_Rule_applicableToIdToUser: { select: { displayName: true, email: true } },
+            RuleViolation: { take: 5, orderBy: { occurredAt: 'desc' } }
           }
         },
-        goals: {
+        Goal: {
           where: { status: 'ACTIVE' },
           include: {
-            creator: { select: { displayName: true, email: true } },
-            assignedTo: { select: { displayName: true, email: true } }
+            User_Goal_creatorIdToUser: { select: { displayName: true, email: true } },
+            User_Goal_assignedToIdToUser: { select: { displayName: true, email: true } }
           }
         },
-        progressions: {
+        StageProgression: {
           take: 10,
           orderBy: { triggeredAt: 'desc' },
           include: {
-            user: { select: { displayName: true, email: true } }
+            User: { select: { displayName: true, email: true } }
           }
         }
       }
@@ -142,12 +151,12 @@ export class StageService {
     const stage = await prisma.stage.findUnique({
       where: { stageNumber },
       include: {
-        tasks: { where: { status: 'ACTIVE' } },
-        rules: { where: { isActive: true } },
-        goals: { where: { status: 'ACTIVE' } },
+        Task: { where: { status: 'ACTIVE' } },
+        Rule: { where: { isActive: true } },
+        Goal: { where: { status: 'ACTIVE' } },
         _count: {
           select: {
-            progressions: { where: { status: 'CONFIRMED' } }
+            StageProgression: { where: { status: 'CONFIRMED' } }
           }
         }
       }
@@ -163,79 +172,9 @@ export class StageService {
   static async getActiveEntitiesForStage(filter: EntityFilter) {
     const { userId, userRole, currentStage, entityType, activeOnly = true } = filter;
 
-    const baseWhere = {
-      activeFromStage: { lte: currentStage || 1 },
-      OR: [
-        { activeToStage: null },
-        { activeToStage: { gte: currentStage || 1 } }
-      ]
-    };
-
-    let entities: any[] = [];
-
-    if (!entityType || entityType === 'TASK') {
-      const taskWhere = {
-        ...baseWhere,
-        ...(activeOnly && { status: 'ACTIVE' }),
-        ...(userRole === 'SUB' && { assignedToId: userId })
-      };
-
-      const tasks = await prisma.task.findMany({
-        where: taskWhere,
-        include: {
-          creator: { select: { displayName: true, role: true } },
-          assignedTo: { select: { displayName: true, role: true } }
-        },
-        orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }]
-      });
-
-      entities.push(...tasks.map(task => ({ ...task, entityType: 'TASK' })));
-    }
-
-    if (!entityType || entityType === 'RULE') {
-      const ruleWhere = {
-        ...baseWhere,
-        ...(activeOnly && { isActive: true }),
-        ...(userRole === 'SUB' && { applicableToId: userId })
-      };
-
-      const rules = await prisma.rule.findMany({
-        where: ruleWhere,
-        include: {
-          creator: { select: { displayName: true, role: true } },
-          applicableTo: { select: { displayName: true, role: true } },
-          violations: {
-            where: { userId },
-            orderBy: { occurredAt: 'desc' },
-            take: 3
-          }
-        },
-        orderBy: { severity: 'desc' }
-      });
-
-      entities.push(...rules.map(rule => ({ ...rule, entityType: 'RULE' })));
-    }
-
-    if (!entityType || entityType === 'GOAL') {
-      const goalWhere = {
-        ...baseWhere,
-        ...(activeOnly && { status: 'ACTIVE' }),
-        ...(userRole === 'SUB' && { assignedToId: userId })
-      };
-
-      const goals = await prisma.goal.findMany({
-        where: goalWhere,
-        include: {
-          creator: { select: { displayName: true, role: true } },
-          assignedTo: { select: { displayName: true, role: true } }
-        },
-        orderBy: [{ priority: 'desc' }, { deadline: 'asc' }]
-      });
-
-      entities.push(...goals.map(goal => ({ ...goal, entityType: 'GOAL' })));
-    }
-
-    return entities;
+    // For stage isolation, we need a stageId parameter
+    // This method needs to be updated to use stageId instead of stage ranges
+    throw new CustomError('NOT_IMPLEMENTED', 'This method needs stageId parameter for stage isolation');
   }
 
   static async getPendingProgressions(domId?: string) {
@@ -251,12 +190,12 @@ export class StageService {
     const progressions = await prisma.stageProgression.findMany({
       where,
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             displayName: true,
             email: true,
-            pointAccount: {
+            GlobalPointAccount: {
               select: {
                 totalPoints: true,
                 currentStage: true
@@ -264,7 +203,7 @@ export class StageService {
             }
           }
         },
-        stage: true
+        Stage: true
       },
       orderBy: { triggeredAt: 'asc' }
     });
@@ -278,10 +217,10 @@ export class StageService {
     const progression = await prisma.stageProgression.findUnique({
       where: { id: progressionId },
       include: {
-        user: {
+        User: {
           include: {
             domConnection: true,
-            pointAccount: true
+            GlobalPointAccount: true
           }
         }
       }
@@ -295,7 +234,7 @@ export class StageService {
       throw new CustomError('VALIDATION_ERROR', 'Stufenfortschritt wurde bereits bearbeitet');
     }
 
-    if (progression.user.domConnection?.domId !== domId) {
+    if (progression.User.domConnection?.domId !== domId) {
       throw new CustomError('FORBIDDEN', 'Nur der zugewiesene DOM kann diesen Fortschritt bestätigen');
     }
 
@@ -315,7 +254,7 @@ export class StageService {
         }
       });
 
-      if (approved && progression.user.pointAccount) {
+      if (approved && progression.User.GlobalPointAccount) {
         await prisma.globalPointAccount.update({
           where: { userId: progression.userId },
           data: {
@@ -333,7 +272,7 @@ export class StageService {
     const progressions = await prisma.stageProgression.findMany({
       where: { userId },
       include: {
-        stage: true
+        Stage: true
       },
       orderBy: { triggeredAt: 'desc' },
       take: limit
@@ -363,27 +302,40 @@ export class StageService {
         }
       },
       include: {
-        user: { select: { displayName: true, role: true } },
-        stage: { select: { name: true, stageNumber: true } }
+        User: { select: { displayName: true, role: true } },
+        Stage: { select: { name: true, stageNumber: true } }
       },
       orderBy: { triggeredAt: 'desc' },
       take: 50
     });
 
-    const entityCounts = await Promise.all([
-      prisma.task.groupBy({
-        by: ['activeFromStage'],
-        _count: { _all: true }
-      }),
-      prisma.rule.groupBy({
-        by: ['activeFromStage'],
-        _count: { _all: true }
-      }),
-      prisma.goal.groupBy({
-        by: ['activeFromStage'],
-        _count: { _all: true }
-      })
-    ]);
+    // Since we moved to stage isolation, we need to group by stageId instead
+    const stages = await prisma.stage.findMany({
+      include: {
+        _count: {
+          select: {
+            Task: true,
+            Rule: true,
+            Goal: true,
+            Privileg: true,
+            Strafe: true,
+            TPEEintrag: true,
+            Initiationsriten: true
+          }
+        }
+      }
+    });
+
+    const entityCounts = stages.map(stage => ({
+      stageNumber: stage.stageNumber,
+      tasks: stage._count.Task,
+      rules: stage._count.Rule,
+      goals: stage._count.Goal,
+      privilegien: stage._count.Privileg,
+      strafen: stage._count.Strafe,
+      tpe: stage._count.TPEEintrag,
+      initiationsriten: stage._count.Initiationsriten
+    }));
 
     return {
       stageDistribution: stageDistribution.map(item => ({
@@ -399,16 +351,20 @@ export class StageService {
       }, {} as Record<string, number>),
       recentProgressions,
       entityDistribution: {
-        tasks: this.groupByStage(entityCounts[0]),
-        rules: this.groupByStage(entityCounts[1]),
-        goals: this.groupByStage(entityCounts[2])
+        tasks: this.groupByStageNumber(entityCounts, 'tasks'),
+        rules: this.groupByStageNumber(entityCounts, 'rules'),
+        goals: this.groupByStageNumber(entityCounts, 'goals'),
+        privilegien: this.groupByStageNumber(entityCounts, 'privilegien'),
+        strafen: this.groupByStageNumber(entityCounts, 'strafen'),
+        tpe: this.groupByStageNumber(entityCounts, 'tpe'),
+        initiationsriten: this.groupByStageNumber(entityCounts, 'initiationsriten')
       }
     };
   }
 
-  private static groupByStage(data: any[]) {
+  private static groupByStageNumber(data: any[], entityType: string) {
     return data.reduce((acc, item) => {
-      acc[item.activeFromStage] = item._count._all;
+      acc[item.stageNumber] = item[entityType];
       return acc;
     }, {} as Record<number, number>);
   }
@@ -419,10 +375,14 @@ export class StageService {
       include: {
         _count: {
           select: {
-            tasks: true,
-            rules: true,
-            goals: true,
-            progressions: true
+            Task: true,
+            Rule: true,
+            Goal: true,
+            Initiationsriten: true,
+            StageProgression: true,
+            Privileg: true,
+            Strafe: true,
+            TPEEintrag: true
           }
         }
       }
@@ -542,7 +502,13 @@ export class StageService {
 
     const createdStages = await prisma.$transaction(
       defaultStages.map(stage => 
-        prisma.stage.create({ data: stage })
+        prisma.stage.create({ 
+          data: {
+            id: crypto.randomUUID(),
+            ...stage,
+            updatedAt: new Date()
+          }
+        })
       )
     );
 

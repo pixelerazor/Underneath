@@ -8,24 +8,45 @@ datasource db {
 }
 
 model User {
-  id                     String       @id @default(uuid())
-  email                  String       @unique
-  password               String
-  role                   String
-  displayName            String?
-  profileCompleted       Boolean      @default(false)
-  // Push Notification Fields
-  fcmToken               String?
-  pushNotificationsEnabled Boolean   @default(true)
-  fcmTokenUpdatedAt      DateTime?
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  sentInvitations        Invitation[] @relation("InvitationSender")
-  sessions               Session[]
-  profile                UserProfile?
-  // 1:1 Connection relationships
-  domConnection          Connection?  @relation("DomConnection")
-  subConnection          Connection?  @relation("SubConnection")
+  id                             String                    @id @default(uuid())
+  email                          String                    @unique
+  password                       String
+  role                           String
+  displayName                    String?
+  profileCompleted               Boolean                   @default(false)
+  fcmToken                       String?
+  pushNotificationsEnabled       Boolean                   @default(true)
+  fcmTokenUpdatedAt              DateTime?
+  createdAt                      DateTime                  @default(now())
+  updatedAt                      DateTime                  @updatedAt
+  AllgemeineInformation          AllgemeineInformation[]
+  domConnection                  Connection?               @relation("DomConnection")
+  subConnection                  Connection?               @relation("SubConnection")
+  FAQ                            FAQ[]
+  GeistlichesWohlbefinden        GeistlichesWohlbefinden[]
+  GlobalPointAccount             GlobalPointAccount?
+  Goal_Goal_assignedToIdToUser   Goal[]                    @relation("Goal_assignedToIdToUser")
+  Goal_Goal_creatorIdToUser      Goal[]                    @relation("Goal_creatorIdToUser")
+  Initiationsriten               Initiationsriten[]
+  sentInvitations                Invitation[]              @relation("InvitationSender")
+  Keuschheit                     Keuschheit[]
+  NeueErkenntnis                 NeueErkenntnis[]
+  PointTransaction               PointTransaction[]
+  Rueckfall                      Rueckfall[]
+  Rule_Rule_applicableToIdToUser Rule[]                    @relation("Rule_applicableToIdToUser")
+  Rule_Rule_creatorIdToUser      Rule[]                    @relation("Rule_creatorIdToUser")
+  RuleViolation                  RuleViolation[]
+  Privileg_Privileg_creatorIdToUser   Privileg[] @relation("Privileg_creatorIdToUser")
+  Privileg_Privileg_grantedToIdToUser Privileg[] @relation("Privileg_grantedToIdToUser")
+  sessions                       Session[]
+  StageProgression               StageProgression[]
+  Strafe_Strafe_adminByToUser    Strafe[]                  @relation("Strafe_adminByToUser")
+  Strafe_Strafe_userIdToUser     Strafe[]                  @relation("Strafe_userIdToUser")
+  TPEEintrag                     TPEEintrag[]
+  Task_Task_assignedToIdToUser   Task[]                    @relation("Task_assignedToIdToUser")
+  Task_Task_creatorIdToUser      Task[]                    @relation("Task_creatorIdToUser")
+  Trigger                        Trigger[]
+  profile                        UserProfile?
 }
 
 model Session {
@@ -53,15 +74,14 @@ model Invitation {
 
 model Connection {
   id        String   @id @default(uuid())
-  domId     String   @unique // Ensures 1:1 - one DOM can only have one connection
-  subId     String   @unique // Ensures 1:1 - one SUB can only have one connection  
-  status    String   @default("ACTIVE") // ACTIVE, TERMINATED, SUSPENDED
+  domId     String   @unique
+  subId     String   @unique
+  status    String   @default("ACTIVE")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  // Relationships
   dom       User     @relation("DomConnection", fields: [domId], references: [id], onDelete: Cascade)
   sub       User     @relation("SubConnection", fields: [subId], references: [id], onDelete: Cascade)
-  
+
   @@index([domId])
   @@index([subId])
   @@index([status])
@@ -70,22 +90,488 @@ model Connection {
 model UserProfile {
   id              String   @id @default(uuid())
   userId          String   @unique
-  // Basic Information
   preferredName   String?
-  experienceLevel String?  // BEGINNER, EXPERIENCED, EXPERT
-  availability    Json?    // Flexible JSON for complex availability data
+  experienceLevel String?
+  availability    Json?
   timezone        String?
-  // Role-specific preferences (stored as JSON for flexibility)
-  preferences     Json?    // Role-specific settings
-  goals           String?  // Text field for personal goals
-  boundaries      Json?    // Limits and boundaries
-  communication   Json?    // Communication preferences
-  // Metadata
-  completedSteps  String[] // Track which onboarding steps are done
+  preferences     Json?
+  goals           String?
+  boundaries      Json?
+  communication   Json?
+  completedSteps  String[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  // Relations
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  @@index([userId])
+}
+
+model AllgemeineInformation {
+  id        String   @id
+  title     String
+  content   String
+  category  String?
+  priority  String   @default("medium")
+  isPublic  Boolean  @default(true)
+  tags      String[]
+  creatorId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  User      User     @relation(fields: [creatorId], references: [id])
+
+  @@index([category])
+  @@index([creatorId])
+  @@index([priority])
+}
+
+model FAQ {
+  id        String   @id
+  question  String
+  answer    String
+  category  String?
+  priority  String   @default("medium")
+  tags      String[]
+  isPublic  Boolean  @default(true)
+  creatorId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  User      User     @relation(fields: [creatorId], references: [id])
+
+  @@index([category])
+  @@index([creatorId])
+  @@index([priority])
+}
+
+model GeistlichesWohlbefinden {
+  id          String   @id
+  title       String
+  description String?
+  mood        Int
+  energy      Int
+  category    String?
+  triggers    String?
+  duration    String?
+  notes       String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([mood])
+  @@index([userId])
+}
+
+model GlobalPointAccount {
+  id                 String             @id
+  userId             String             @unique
+  totalPoints        Int                @default(0)
+  currentStage       Int                @default(1)
+  pointsInStage      Int                @default(0)
+  nextStageThreshold Int                @default(100)
+  lastStageChange    DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  User               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PointTransaction   PointTransaction[]
+
+  @@index([currentStage])
+  @@index([userId])
+}
+
+model Goal {
+  id                           String    @id @default(uuid())
+  title                        String
+  description                  String?
+  category                     String
+  targetValue                  Int?
+  currentValue                 Int       @default(0)
+  pointsReward                 Int       @default(50)
+  status                       String    @default("ACTIVE")
+  priority                     String    @default("medium")
+  deadline                     DateTime?
+  completedAt                  DateTime?
+  creatorId                    String
+  assignedToId                 String?
+  stageId                      String    // Now required for stage isolation
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  User_Goal_assignedToIdToUser User?     @relation("Goal_assignedToIdToUser", fields: [assignedToId], references: [id])
+  User_Goal_creatorIdToUser    User      @relation("Goal_creatorIdToUser", fields: [creatorId], references: [id])
+  Stage                        Stage     @relation(fields: [stageId], references: [id])
+
+  @@index([stageId])
+  @@index([assignedToId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+model Initiationsriten {
+  id                    String   @id
+  title                 String
+  description           String?
+  ritualType            String?
+  markingType           String?
+  bodyLocation          String?
+  symbolism             String?
+  actionSequence        String?
+  symbolMeaning         String?
+  repetitionSchedule    String?
+  ceremonyLocation      String?
+  participants          String?
+  ceremonyDuration      String?
+  ceremonyElements      String?
+  behaviorDescription   String?
+  behaviorDuration      String?
+  behaviorFrequency     String?
+  customDefinition      String?
+  timing                String?
+  documentation         String?
+  requiresPreparation   Boolean  @default(false)
+  requiresAftercare     Boolean  @default(false)
+  preparationDetails    String?
+  aftercareDetails      String?
+  explicitConsent       Boolean  @default(false)
+  hardLimits            String?
+  exitClause            String?
+  medicalConsiderations String?
+  reversibility         String?
+  reversibilityDetails  String?
+  creatorId             String
+  stageId               String   // Now required for stage isolation
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime
+  User                  User     @relation(fields: [creatorId], references: [id])
+  Stage                 Stage    @relation(fields: [stageId], references: [id])
+
+  @@index([stageId])
+  @@index([createdAt])
+  @@index([creatorId])
+  @@index([ritualType])
+}
+
+model Keuschheit {
+  id            String   @id
+  title         String
+  type          String
+  duration      Int?
+  device        String?
+  description   String?
+  intensity     Int?
+  satisfaction  Int?
+  wasPlanned    Boolean  @default(false)
+  wasPermission Boolean  @default(false)
+  wasReward     Boolean  @default(false)
+  wasPunishment Boolean  @default(false)
+  notes         String?
+  userId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([userId])
+}
+
+model NeueErkenntnis {
+  id          String   @id
+  title       String
+  insight     String
+  context     String?
+  category    String?
+  importance  String   @default("medium")
+  clarity     Int?
+  application String?
+  relatedTo   String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([importance])
+  @@index([userId])
+}
+
+model PointTransaction {
+  id                 String             @id
+  userId             String
+  amount             Int
+  reason             String
+  description        String?
+  category           String
+  entityType         String?
+  entityId           String?
+  createdAt          DateTime           @default(now())
+  GlobalPointAccount GlobalPointAccount @relation(fields: [userId], references: [userId], map: "PointTransaction_pointAccount_fkey")
+  User               User               @relation(fields: [userId], references: [id], onDelete: Cascade, map: "PointTransaction_user_fkey")
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model Rueckfall {
+  id              String   @id
+  title           String
+  type            String?
+  severity        String   @default("medium")
+  triggers        String
+  description     String?
+  duration        String?
+  pointsPenalty   Int?
+  emotions        String?
+  wasReported     Boolean  @default(false)
+  wasIntentional  Boolean  @default(false)
+  requiresAction  Boolean  @default(false)
+  hasConsequences Boolean  @default(false)
+  prevention      String?
+  lessons         String?
+  userId          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([type])
+  @@index([userId])
+}
+
+model Rule {
+  id                             String          @id @default(uuid())
+  title                          String
+  description                    String
+  category                       String
+  severity                       String          @default("medium")
+  pointsPenalty                  Int             @default(-10)
+  isActive                       Boolean         @default(true)
+  creatorId                      String
+  applicableToId                 String?
+  stageId                        String          // Now required for stage isolation
+  createdAt                      DateTime        @default(now())
+  updatedAt                      DateTime        @updatedAt
+  User_Rule_applicableToIdToUser User?           @relation("Rule_applicableToIdToUser", fields: [applicableToId], references: [id])
+  User_Rule_creatorIdToUser      User            @relation("Rule_creatorIdToUser", fields: [creatorId], references: [id])
+  Stage                          Stage           @relation(fields: [stageId], references: [id])
+  RuleViolation                  RuleViolation[]
+
+  @@index([stageId])
+  @@index([applicableToId])
+  @@index([creatorId])
+  @@index([isActive])
+}
+
+model Privileg {
+  id              String    @id
+  title           String
+  description     String?
+  category        String?
+  type            String?   // "REWARD", "ACCESS", "EXEMPTION", etc.
+  conditions      String?   // Conditions to earn/maintain privilege
+  duration        String?   // "PERMANENT", "TEMPORARY", "SESSION"
+  pointsRequired  Int?      // Points needed to earn this privilege
+  level          Int?      // Privilege level (1-5)
+  canRevoke      Boolean   @default(true)
+  autoExpires    Boolean   @default(false)
+  expiresAfter   String?   // Time period after which it expires
+  creatorId       String
+  grantedToId     String?
+  stageId         String    // Now required for stage isolation
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  User_Privileg_creatorIdToUser   User  @relation("Privileg_creatorIdToUser", fields: [creatorId], references: [id])
+  User_Privileg_grantedToIdToUser User? @relation("Privileg_grantedToIdToUser", fields: [grantedToId], references: [id])
+  Stage                           Stage @relation(fields: [stageId], references: [id])
+
+  @@index([stageId])
+  @@index([creatorId])
+  @@index([grantedToId])
+  @@index([isActive])
+  @@index([type])
+}
+
+model RuleViolation {
+  id            String    @id @default(uuid())
+  ruleId        String
+  userId        String
+  reportedBy    String?
+  description   String?
+  severity      String
+  pointsPenalty Int
+  status        String    @default("CONFIRMED")
+  occurredAt    DateTime  @default(now())
+  resolvedAt    DateTime?
+  Rule          Rule      @relation(fields: [ruleId], references: [id])
+  User          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([occurredAt])
+  @@index([ruleId])
+  @@index([status])
+  @@index([userId])
+}
+
+model Stage {
+  id               String             @id
+  stageNumber      Int                @unique
+  name             String
+  description      String?
+  pointsRequired   Int
+  color            String?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  Goal             Goal[]
+  Initiationsriten Initiationsriten[]
+  Privileg         Privileg[]
+  Rule             Rule[]
+  StageProgression StageProgression[]
+  Strafe           Strafe[]
+  Task             Task[]
+  TPEEintrag       TPEEintrag[]
+
+  @@index([pointsRequired])
+  @@index([stageNumber])
+}
+
+model StageProgression {
+  id          String    @id
+  userId      String
+  fromStage   Int
+  toStage     Int
+  triggeredAt DateTime  @default(now())
+  confirmedAt DateTime?
+  confirmedBy String?
+  status      String    @default("PENDING")
+  karenzzeit  DateTime?
+  notes       String?
+  Stage       Stage     @relation(fields: [toStage], references: [stageNumber])
+  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([triggeredAt])
+  @@index([userId])
+}
+
+model Strafe {
+  id                        String   @id @default(uuid())
+  title                     String
+  reason                    String?
+  description               String?
+  severity                  String?
+  category                  String?
+  duration                  String?
+  intensity                 Int?
+  tools                     String?
+  isCompleted               Boolean  @default(false)
+  wasEffective              Boolean  @default(false)
+  wasConsensual             Boolean  @default(true)
+  requiresFollowup          Boolean  @default(false)
+  reaction                  String?
+  effectiveness             String?
+  userId                    String
+  adminBy                   String?
+  stageId                   String   // Now required for stage isolation
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  User_Strafe_adminByToUser User?    @relation("Strafe_adminByToUser", fields: [adminBy], references: [id])
+  User_Strafe_userIdToUser  User     @relation("Strafe_userIdToUser", fields: [userId], references: [id], onDelete: Cascade)
+  Stage                     Stage    @relation(fields: [stageId], references: [id])
+
+  @@index([stageId])
+  @@index([adminBy])
+  @@index([category])
+  @@index([createdAt])
+  @@index([severity])
+  @@index([userId])
+}
+
+model TPEEintrag {
+  id               String   @id @default(uuid())
+  title            String
+  type             String?
+  description      String?
+  duration         String?
+  intensity        Int?
+  context          String?
+  compliance       Int?
+  satisfaction     Int?
+  wasInitiated     Boolean  @default(false)
+  wasSuccessful    Boolean  @default(true)
+  hadResistance    Boolean  @default(false)
+  requiresFollowup Boolean  @default(false)
+  emotions         String?
+  lessons          String?
+  improvements     String?
+  userId           String
+  stageId          String   // Now required for stage isolation
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  User             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Stage            Stage    @relation(fields: [stageId], references: [id])
+
+  @@index([stageId])
+  @@index([createdAt])
+  @@index([intensity])
+  @@index([type])
+  @@index([userId])
+}
+
+model Task {
+  id                           String    @id @default(uuid())
+  title                        String
+  description                  String?
+  category                     String
+  priority                     String    @default("medium")
+  pointsReward                 Int       @default(10)
+  status                       String    @default("ACTIVE")
+  dueDate                      DateTime?
+  completedAt                  DateTime?
+  creatorId                    String
+  assignedToId                 String?
+  stageId                      String    // Now required for stage isolation
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  User_Task_assignedToIdToUser User?     @relation("Task_assignedToIdToUser", fields: [assignedToId], references: [id])
+  User_Task_creatorIdToUser    User      @relation("Task_creatorIdToUser", fields: [creatorId], references: [id])
+  Stage                        Stage     @relation(fields: [stageId], references: [id])
+
+  @@index([stageId])
+  @@index([assignedToId])
+  @@index([creatorId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model Trigger {
+  id               String   @id
+  title            String
+  type             String?
+  description      String?
+  intensity        Int?
+  frequency        String?
+  response         String?
+  context          String?
+  emotions         String?
+  physicalReaction String?
+  wasExpected      Boolean  @default(false)
+  wasManaged       Boolean  @default(false)
+  causedRelapse    Boolean  @default(false)
+  isRecurring      Boolean  @default(false)
+  copingStrategies String?
+  prevention       String?
+  userId           String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+  User             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([frequency])
+  @@index([intensity])
+  @@index([type])
   @@index([userId])
 }

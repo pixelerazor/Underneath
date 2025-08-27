@@ -7,3 +7,14 @@ export class CustomError extends Error {
     this.name = 'CustomError';
   }
 }
+
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public statusCode: number = 500,
+    public originalError?: any
+  ) {
+    super(message);
+    this.name = 'AppError';
+  }
+}

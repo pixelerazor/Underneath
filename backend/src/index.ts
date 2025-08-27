@@ -12,6 +12,10 @@ import { profileRoutes } from './routes/profile';
 import stagesRoutes from './routes/stagesRoutes';
 import tasksRoutes from './routes/tasksRoutes';
 import rulesRoutes from './routes/rulesRoutes';
+import initiationsritenRoutes from './routes/initiationsritenRoutes';
+import privilegienRoutes from './routes/privilegienRoutes';
+import strafenRoutes from './routes/strafenRoutes';
+import tpeRoutes from './routes/tpeRoutes';
 
 // Import middleware for protected routes
 import { authenticateToken } from './middleware/auth';
@@ -33,8 +37,29 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+// Enhanced CORS configuration with debugging
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Log all origins for debugging
+    console.log('🔍 CORS Origin Check:', { origin, expected: process.env.FRONTEND_URL || 'http://localhost:5174' });
+    
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:5174',
+      'http://localhost:5173', // Fallback for development
+      'http://localhost:5175', // Additional dev port
+    ];
+    
+    // Allow no origin (for non-browser requests like curl/Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS Origin allowed:', origin);
+      callback(null, true);
+    } else {
+      console.log('❌ CORS Origin blocked:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -43,10 +68,20 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Simple request logging for development
+// Enhanced request logging for development
 if (process.env.NODE_ENV === 'development') {
   app.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    
+    // Log auth headers for debugging
+    if (req.path.includes('/api/stages')) {
+      console.log('🔍 Stages Request Debug:', {
+        origin: req.headers.origin,
+        authorization: req.headers.authorization ? 'Bearer [TOKEN]' : 'NO_TOKEN',
+        userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
+      });
+    }
+    
     next();
   });
 }
@@ -60,6 +95,51 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+// Debug endpoint for authentication issues
+app.get('/api/debug/auth', (req: Request, res: Response) => {
+  res.json({
+    headers: {
+      authorization: req.headers.authorization ? 'Present' : 'Missing',
+      origin: req.headers.origin || 'Not set'
+    },
+    user: req.user || null,
+    authenticated: !!req.user
+  });
+});
+
+// Temporary stages endpoint without auth for debugging
+app.get('/api/debug/stages-no-auth', async (_req: Request, res: Response) => {
+  try {
+    const { prisma } = require('./lib/prisma');
+    const stages = await prisma.stage.findMany({
+      where: { isActive: true },
+      orderBy: { stageNumber: 'asc' },
+      include: {
+        _count: {
+          select: {
+            Task: true,
+            Rule: true,
+            Goal: true,
+            Initiationsriten: true,
+            StageProgression: true,
+            Privileg: true,
+            Strafe: true,
+            TPEEintrag: true
+          }
+        }
+      }
+    });
+    
+    res.json({
+      success: true,
+      data: stages,
+      message: 'Stages loaded without authentication for debugging'
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/invitations', authenticateToken, invitationRoutes);
@@ -68,6 +148,10 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/stages', authenticateToken, stagesRoutes);
 app.use('/api/tasks', authenticateToken, tasksRoutes);
 app.use('/api/rules', authenticateToken, rulesRoutes);
+app.use('/api/initiationsriten', authenticateToken, initiationsritenRoutes);
+app.use('/api/privilegien', authenticateToken, privilegienRoutes);
+app.use('/api/strafen', authenticateToken, strafenRoutes);
+app.use('/api/tpe', authenticateToken, tpeRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
