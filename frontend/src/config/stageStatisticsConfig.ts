@@ -86,7 +86,8 @@ export const STAGE_SYSTEM_ENTITIES: StatisticCardConfig[] = [
     iconColor: 'text-yellow-600',
     entityType: 'initiationsriten',
     getStatValue: () => 0, // Will be dynamically loaded
-    description: 'Zeremonien und Rituale für Stufenaufstiege'
+    description: 'Zeremonien und Rituale für Stufenaufstiege',
+    filterEntities: (entities) => entities // Show all initiationsriten entities
   },
   {
     id: 'privilegien',
@@ -95,7 +96,8 @@ export const STAGE_SYSTEM_ENTITIES: StatisticCardConfig[] = [
     iconColor: 'text-emerald-600',
     entityType: 'privilegien',
     getStatValue: () => 0, // Will be dynamically loaded
-    description: 'Besondere Rechte und Freiheiten'
+    description: 'Besondere Rechte und Freiheiten',
+    filterEntities: (entities) => entities.filter((e: any) => e.isActive !== false) // Show active privileges
   },
   {
     id: 'strafen',
@@ -104,7 +106,8 @@ export const STAGE_SYSTEM_ENTITIES: StatisticCardConfig[] = [
     iconColor: 'text-red-600',
     entityType: 'strafen', 
     getStatValue: () => 0, // Will be dynamically loaded
-    description: 'Konsequenzen und Disziplinarmaßnahmen'
+    description: 'Konsequenzen und Disziplinarmaßnahmen',
+    filterEntities: (entities) => entities // Show all strafen entities
   },
   {
     id: 'tpe',
@@ -113,6 +116,7 @@ export const STAGE_SYSTEM_ENTITIES: StatisticCardConfig[] = [
     iconColor: 'text-pink-600',
     entityType: 'tpe',
     getStatValue: () => 0, // Will be dynamically loaded
-    description: 'Total Power Exchange Elemente'
+    description: 'Total Power Exchange Elemente',
+    filterEntities: (entities) => entities // Show all TPE entities
   }
 ];

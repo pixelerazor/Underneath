@@ -19,9 +19,7 @@ import {
   Eye,
   EyeOff,
   Power,
-  PowerOff,
-  CheckCircle,
-  TrendingUp
+  PowerOff
 } from 'lucide-react';
 import { stageService, type Stage } from '@/services/stageService';
 import { toast } from 'sonner';
@@ -387,32 +385,6 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
                 <p className="text-muted-foreground">{stage.description}</p>
               )}
 
-              {/* Moved Statistics Cards from Grid */}
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                {/* Heute erledigt - moved from StageStatisticsGrid */}
-                <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-white">Heute erledigt</span>
-                  </div>
-                  <div className="text-xl font-bold text-white">
-                    {statistics?.completedToday ?? 0}
-                  </div>
-                  <div className="text-xs text-gray-300">Aufgaben abgeschlossen</div>
-                </div>
-
-                {/* Ziele Fortschritt - moved from StageStatisticsGrid */}
-                <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium text-white">Ziele Fortschritt</span>
-                  </div>
-                  <div className="text-xl font-bold text-white">
-                    {statistics?.goalsProgress ?? 0}%
-                  </div>
-                  <div className="text-xs text-gray-300">Durchschnitt</div>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>

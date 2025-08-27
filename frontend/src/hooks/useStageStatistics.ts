@@ -165,7 +165,8 @@ export function useStageStatistics({ stageId, stageNumber, stageName, onShowAll,
 
   const toggleCardExpansion = useCallback(async (statisticType: StatisticType) => {
     const cardKey = `${stageId}-${statisticType}`;
-    const config = STAGE_STATISTICS_CONFIG.find(c => c.id === statisticType);
+    const config = STAGE_STATISTICS_CONFIG.find(c => c.id === statisticType) || 
+                  STAGE_SYSTEM_ENTITIES.find(c => c.id === statisticType);
     
     if (!config) return;
     
@@ -237,7 +238,8 @@ export function useStageStatistics({ stageId, stageNumber, stageName, onShowAll,
   const showAllEntities = useCallback((statisticType: StatisticType) => {
     const cardKey = `${stageId}-${statisticType}`;
     const entities = expandedCards.get(cardKey) || [];
-    const config = STAGE_STATISTICS_CONFIG.find(c => c.id === statisticType);
+    const config = STAGE_STATISTICS_CONFIG.find(c => c.id === statisticType) || 
+                  STAGE_SYSTEM_ENTITIES.find(c => c.id === statisticType);
     
     if (!config) return;
 
