@@ -8,45 +8,45 @@ datasource db {
 }
 
 model User {
-  id                             String                    @id @default(uuid())
-  email                          String                    @unique
-  password                       String
-  role                           String
-  displayName                    String?
-  profileCompleted               Boolean                   @default(false)
-  fcmToken                       String?
-  pushNotificationsEnabled       Boolean                   @default(true)
-  fcmTokenUpdatedAt              DateTime?
-  createdAt                      DateTime                  @default(now())
-  updatedAt                      DateTime                  @updatedAt
-  AllgemeineInformation          AllgemeineInformation[]
-  domConnection                  Connection?               @relation("DomConnection")
-  subConnection                  Connection?               @relation("SubConnection")
-  FAQ                            FAQ[]
-  GeistlichesWohlbefinden        GeistlichesWohlbefinden[]
-  GlobalPointAccount             GlobalPointAccount?
-  Goal_Goal_assignedToIdToUser   Goal[]                    @relation("Goal_assignedToIdToUser")
-  Goal_Goal_creatorIdToUser      Goal[]                    @relation("Goal_creatorIdToUser")
-  Initiationsriten               Initiationsriten[]
-  sentInvitations                Invitation[]              @relation("InvitationSender")
-  Keuschheit                     Keuschheit[]
-  NeueErkenntnis                 NeueErkenntnis[]
-  PointTransaction               PointTransaction[]
-  Rueckfall                      Rueckfall[]
-  Rule_Rule_applicableToIdToUser Rule[]                    @relation("Rule_applicableToIdToUser")
-  Rule_Rule_creatorIdToUser      Rule[]                    @relation("Rule_creatorIdToUser")
-  RuleViolation                  RuleViolation[]
-  Privileg_Privileg_creatorIdToUser   Privileg[] @relation("Privileg_creatorIdToUser")
-  Privileg_Privileg_grantedToIdToUser Privileg[] @relation("Privileg_grantedToIdToUser")
-  sessions                       Session[]
-  StageProgression               StageProgression[]
-  Strafe_Strafe_adminByToUser    Strafe[]                  @relation("Strafe_adminByToUser")
-  Strafe_Strafe_userIdToUser     Strafe[]                  @relation("Strafe_userIdToUser")
-  TPEEintrag                     TPEEintrag[]
-  Task_Task_assignedToIdToUser   Task[]                    @relation("Task_assignedToIdToUser")
-  Task_Task_creatorIdToUser      Task[]                    @relation("Task_creatorIdToUser")
-  Trigger                        Trigger[]
-  profile                        UserProfile?
+  id                                  String                    @id @default(uuid())
+  email                               String                    @unique
+  password                            String
+  role                                String
+  displayName                         String?
+  profileCompleted                    Boolean                   @default(false)
+  fcmToken                            String?
+  pushNotificationsEnabled            Boolean                   @default(true)
+  fcmTokenUpdatedAt                   DateTime?
+  createdAt                           DateTime                  @default(now())
+  updatedAt                           DateTime                  @updatedAt
+  AllgemeineInformation               AllgemeineInformation[]
+  domConnection                       Connection?               @relation("DomConnection")
+  subConnection                       Connection?               @relation("SubConnection")
+  FAQ                                 FAQ[]
+  GeistlichesWohlbefinden             GeistlichesWohlbefinden[]
+  GlobalPointAccount                  GlobalPointAccount?
+  Goal_Goal_assignedToIdToUser        Goal[]                    @relation("Goal_assignedToIdToUser")
+  Goal_Goal_creatorIdToUser           Goal[]                    @relation("Goal_creatorIdToUser")
+  Initiationsriten                    Initiationsriten[]
+  sentInvitations                     Invitation[]              @relation("InvitationSender")
+  Keuschheit                          Keuschheit[]
+  NeueErkenntnis                      NeueErkenntnis[]
+  PointTransaction                    PointTransaction[]
+  Privileg_Privileg_creatorIdToUser   Privileg[]                @relation("Privileg_creatorIdToUser")
+  Privileg_Privileg_grantedToIdToUser Privileg[]                @relation("Privileg_grantedToIdToUser")
+  Rueckfall                           Rueckfall[]
+  Rule_Rule_applicableToIdToUser      Rule[]                    @relation("Rule_applicableToIdToUser")
+  Rule_Rule_creatorIdToUser           Rule[]                    @relation("Rule_creatorIdToUser")
+  RuleViolation                       RuleViolation[]
+  sessions                            Session[]
+  StageProgression                    StageProgression[]
+  Strafe_Strafe_adminByToUser         Strafe[]                  @relation("Strafe_adminByToUser")
+  Strafe_Strafe_userIdToUser          Strafe[]                  @relation("Strafe_userIdToUser")
+  TPEEintrag                          TPEEintrag[]
+  Task_Task_assignedToIdToUser        Task[]                    @relation("Task_assignedToIdToUser")
+  Task_Task_creatorIdToUser           Task[]                    @relation("Task_creatorIdToUser")
+  Trigger                             Trigger[]
+  profile                             UserProfile?
 }
 
 model Session {
@@ -194,7 +194,7 @@ model Goal {
   completedAt                  DateTime?
   creatorId                    String
   assignedToId                 String?
-  stageId                      String    // Now required for stage isolation
+  stageId                      String
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
   User_Goal_assignedToIdToUser User?     @relation("Goal_assignedToIdToUser", fields: [assignedToId], references: [id])
@@ -239,7 +239,7 @@ model Initiationsriten {
   reversibility         String?
   reversibilityDetails  String?
   creatorId             String
-  stageId               String   // Now required for stage isolation
+  stageId               String
   createdAt             DateTime @default(now())
   updatedAt             DateTime
   User                  User     @relation(fields: [creatorId], references: [id])
@@ -297,16 +297,16 @@ model NeueErkenntnis {
 }
 
 model PointTransaction {
-  id                 String             @id
-  userId             String
-  amount             Int
-  reason             String
-  description        String?
-  category           String
-  entityType         String?
-  entityId           String?
-  createdAt          DateTime           @default(now())
-  GlobalPointAccount GlobalPointAccount @relation(fields: [userId], references: [userId], map: "PointTransaction_pointAccount_fkey")
+  id          String             @id
+  userId      String
+  amount      Int
+  reason      String
+  description String?
+  category    String
+  entityType  String?
+  entityId    String?
+  createdAt   DateTime           @default(now())
+  GlobalPointAccount GlobalPointAccount @relation(fields: [userId], references: [userId], map: "PointTransaction_globalAccount_fkey")
   User               User               @relation(fields: [userId], references: [id], onDelete: Cascade, map: "PointTransaction_user_fkey")
 
   @@index([category])
@@ -351,7 +351,7 @@ model Rule {
   isActive                       Boolean         @default(true)
   creatorId                      String
   applicableToId                 String?
-  stageId                        String          // Now required for stage isolation
+  stageId                        String
   createdAt                      DateTime        @default(now())
   updatedAt                      DateTime        @updatedAt
   User_Rule_applicableToIdToUser User?           @relation("Rule_applicableToIdToUser", fields: [applicableToId], references: [id])
@@ -366,27 +366,27 @@ model Rule {
 }
 
 model Privileg {
-  id              String    @id
-  title           String
-  description     String?
-  category        String?
-  type            String?   // "REWARD", "ACCESS", "EXEMPTION", etc.
-  conditions      String?   // Conditions to earn/maintain privilege
-  duration        String?   // "PERMANENT", "TEMPORARY", "SESSION"
-  pointsRequired  Int?      // Points needed to earn this privilege
-  level          Int?      // Privilege level (1-5)
-  canRevoke      Boolean   @default(true)
-  autoExpires    Boolean   @default(false)
-  expiresAfter   String?   // Time period after which it expires
-  creatorId       String
-  grantedToId     String?
-  stageId         String    // Now required for stage isolation
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime
-  User_Privileg_creatorIdToUser   User  @relation("Privileg_creatorIdToUser", fields: [creatorId], references: [id])
-  User_Privileg_grantedToIdToUser User? @relation("Privileg_grantedToIdToUser", fields: [grantedToId], references: [id])
-  Stage                           Stage @relation(fields: [stageId], references: [id])
+  id                              String   @id
+  title                           String
+  description                     String?
+  category                        String?
+  type                            String?
+  conditions                      String?
+  duration                        String?
+  pointsRequired                  Int?
+  level                           Int?
+  canRevoke                       Boolean  @default(true)
+  autoExpires                     Boolean  @default(false)
+  expiresAfter                    String?
+  creatorId                       String
+  grantedToId                     String?
+  stageId                         String
+  isActive                        Boolean  @default(true)
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime
+  User_Privileg_creatorIdToUser   User     @relation("Privileg_creatorIdToUser", fields: [creatorId], references: [id])
+  User_Privileg_grantedToIdToUser User?    @relation("Privileg_grantedToIdToUser", fields: [grantedToId], references: [id])
+  Stage                           Stage    @relation(fields: [stageId], references: [id])
 
   @@index([stageId])
   @@index([creatorId])
@@ -431,8 +431,8 @@ model Stage {
   Rule             Rule[]
   StageProgression StageProgression[]
   Strafe           Strafe[]
-  Task             Task[]
   TPEEintrag       TPEEintrag[]
+  Task             Task[]
 
   @@index([pointsRequired])
   @@index([stageNumber])
@@ -475,12 +475,12 @@ model Strafe {
   effectiveness             String?
   userId                    String
   adminBy                   String?
-  stageId                   String   // Now required for stage isolation
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
+  stageId                   String
   User_Strafe_adminByToUser User?    @relation("Strafe_adminByToUser", fields: [adminBy], references: [id])
-  User_Strafe_userIdToUser  User     @relation("Strafe_userIdToUser", fields: [userId], references: [id], onDelete: Cascade)
   Stage                     Stage    @relation(fields: [stageId], references: [id])
+  User_Strafe_userIdToUser  User     @relation("Strafe_userIdToUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([stageId])
   @@index([adminBy])
@@ -508,11 +508,11 @@ model TPEEintrag {
   lessons          String?
   improvements     String?
   userId           String
-  stageId          String   // Now required for stage isolation
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  User             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stageId          String
   Stage            Stage    @relation(fields: [stageId], references: [id])
+  User             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([stageId])
   @@index([createdAt])
@@ -533,7 +533,7 @@ model Task {
   completedAt                  DateTime?
   creatorId                    String
   assignedToId                 String?
-  stageId                      String    // Now required for stage isolation
+  stageId                      String
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
   User_Task_assignedToIdToUser User?     @relation("Task_assignedToIdToUser", fields: [assignedToId], references: [id])
