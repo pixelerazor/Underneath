@@ -34,6 +34,6 @@ router.put('/:stageId', checkRole(['ADMIN']), StagesController.updateStage);
 
 router.patch('/:stageId/toggle-status', checkRole(['ADMIN']), StagesController.toggleStageStatus);
 
-router.delete('/:stageId', checkRole(['ADMIN']), StagesController.deleteStage);
+router.delete('/:stageId', checkRole(['DOM', 'ADMIN']), StagesController.deleteStage);
 
 export default router;

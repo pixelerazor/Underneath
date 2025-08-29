@@ -101,8 +101,8 @@ export class StagesController {
   static async deleteStage(req: Request, res: Response, next: NextFunction) {
     try {
       const userRole = req.user?.role;
-      if (userRole !== 'ADMIN') {
-        throw new CustomError('FORBIDDEN', 'Nur Administratoren können Stufen löschen');
+      if (!['DOM', 'ADMIN'].includes(userRole)) {
+        throw new CustomError('FORBIDDEN', 'Nur DOMs und Administratoren können Stufen löschen');
       }
 
       const { stageId } = req.params;

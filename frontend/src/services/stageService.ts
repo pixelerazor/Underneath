@@ -99,7 +99,7 @@ class StageServiceImpl extends EntityService<Stage, CreateStageData, UpdateStage
   }
 
   // Delete stage
-  async deleteStage(stageId: string): Promise<{ success: boolean; message: string }> {
+  async deleteStage(stageId: string): Promise<{ success: boolean; message?: string }> {
     return this.remove(stageId);
   }
 

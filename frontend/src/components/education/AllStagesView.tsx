@@ -13,19 +13,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import { 
   Trophy, 
   Lock,
   Unlock,
   Eye,
   EyeOff,
   Power,
-  PowerOff
+  PowerOff,
+  Trash2
 } from 'lucide-react';
 import { stageService, type Stage } from '@/services/stageService';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { StageStatisticsGrid } from '@/components/shared/StageStatisticsGrid';
 import { StageDetailView } from '@/components/shared/StageDetailView';
+import { EntityCreateModal, EntityContext } from '@/components/shared/EntityCreateModal';
 
 interface StageStatistics {
   totalActive: number;
@@ -48,12 +61,15 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
   const [allStages, setAllStages] = useState<StageWithStats[]>([]);
   const [stages, setStages] = useState<StageWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [globalDetailView, setGlobalDetailView] = useState<{ stageName: string; entityTitle: string; entities: any[] } | null>(null);
+  const [globalDetailView, setGlobalDetailView] = useState<{ stageName: string; entityTitle: string; entities: any[]; entityType?: string; stageId?: string; stageNumber?: number } | null>(null);
   const [toggleLoading, setToggleLoading] = useState<Set<string>>(new Set());
+  const [createModalContext, setCreateModalContext] = useState<EntityContext | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{stageId: string, stageName: string} | null>(null);
   const { user } = useAuthStore();
 
   // Check if user is DOM or ADMIN
   const canToggle = user?.role === 'DOM' || user?.role === 'ADMIN';
+  const canDelete = user?.role === 'DOM' || user?.role === 'ADMIN'; // DOM and ADMIN can delete stages
 
   useEffect(() => {
     loadAllStagesData();
@@ -163,6 +179,41 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
     }
   };
 
+  // Show delete confirmation dialog
+  const handleDeleteStage = (stageId: string, stageName: string) => {
+    if (!canDelete) return;
+    setDeleteConfirmation({ stageId, stageName });
+  };
+
+  // Confirm delete stage
+  const confirmDeleteStage = async () => {
+    if (!deleteConfirmation) return;
+    
+    const { stageId, stageName } = deleteConfirmation;
+    setToggleLoading(prev => new Set(prev).add(`delete-${stageId}`));
+    
+    try {
+      const result = await stageService.deleteStage(stageId);
+      
+      // Remove from local state
+      setAllStages(prev => prev.filter(stage => stage.id !== stageId));
+      
+      toast.success(result.message || `Stufe "${stageName}" wurde erfolgreich gelöscht`);
+      
+    } catch (error: any) {
+      console.error('Error deleting stage:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Fehler beim Löschen der Stufe';
+      toast.error(errorMessage);
+    } finally {
+      setToggleLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`delete-${stageId}`);
+        return newSet;
+      });
+      setDeleteConfirmation(null);
+    }
+  };
+
   const loadAllStagesData = async () => {
     if (!user) return;
 
@@ -218,15 +269,65 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
     );
   }
 
+  // Handle entity editing from global detail view
+  const handleEntityEdit = (entity: any, entityType: string) => {
+    // Map entity type to form type
+    const getFormTypeFromEntityType = (entityType: string): 'tasks' | 'rules' | 'goals' | 'initiationsriten' | 'privilegien' | 'strafen' | 'tpe' => {
+      switch (entityType) {
+        case 'tasks': return 'tasks';
+        case 'rules': return 'rules';
+        case 'goals': return 'goals';
+        case 'initiationsriten': return 'initiationsriten';
+        case 'privilegien': return 'privilegien';
+        case 'strafen': return 'strafen';
+        case 'tpe': return 'tpe';
+        default: return 'tasks';
+      }
+    };
+
+    const editContext: EntityContext = {
+      entityType: getFormTypeFromEntityType(entityType),
+      stageId: globalDetailView?.stageId,
+      stageName: globalDetailView?.stageName,
+      stageNumber: globalDetailView?.stageNumber,
+      editMode: true,
+      entityId: entity.id,
+      initialData: entity
+    };
+    
+    setCreateModalContext(editContext);
+  };
+
+  const handleModalClose = () => {
+    setCreateModalContext(null);
+    // Refresh the data after modal closes
+    loadAllStagesData();
+  };
+
   // Global Detail View (when "Show All" is clicked across any stage)
   if (globalDetailView) {
     return (
-      <StageDetailView
-        stageName={globalDetailView.stageName}
-        entityTitle={globalDetailView.entityTitle}
-        entities={globalDetailView.entities}
-        onBack={() => setGlobalDetailView(null)}
-      />
+      <>
+        <StageDetailView
+          stageName={globalDetailView.stageName}
+          entityTitle={globalDetailView.entityTitle}
+          entities={globalDetailView.entities}
+          onBack={() => setGlobalDetailView(null)}
+          onEdit={handleEntityEdit}
+          entityType={globalDetailView.entityType}
+        />
+        
+        {/* Entity Edit Modal */}
+        <EntityCreateModal
+          isOpen={!!createModalContext}
+          onClose={handleModalClose}
+          context={createModalContext}
+          onSuccess={() => {
+            // Refresh data after successful edit
+            loadAllStagesData();
+          }}
+        />
+      </>
     );
   }
 
@@ -240,6 +341,45 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
           <StageContainer key={stage.id} stage={stage} status={status} statistics={statistics} />
         );
       })}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">
+              Stufe löschen
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Sind Sie sicher, dass Sie die Stufe <strong>"{deleteConfirmation?.stageName}"</strong> löschen möchten?
+              <br /><br />
+              <strong>Diese Aktion kann nicht rückgängig gemacht werden.</strong>
+              <br /><br />
+              <span className="text-amber-600">
+                ⚠️ Hinweis: Die Stufe kann nur gelöscht werden, wenn sie keine verknüpften Daten (Aufgaben, Regeln, Ziele, etc.) hat.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmation(null)}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteStage}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteConfirmation ? toggleLoading.has(`delete-${deleteConfirmation.stageId}`) : false}
+            >
+              {deleteConfirmation && toggleLoading.has(`delete-${deleteConfirmation.stageId}`) ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Wird gelöscht...
+                </div>
+              ) : (
+                'Stufe löschen'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 
@@ -250,11 +390,14 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
     statistics?: StageStatistics; 
   }) {
     // Handle "Show All" clicks by setting global detail view
-    const handleShowAll = (_entityType: any, entities: any[], entityTitle: string) => {
+    const handleShowAll = (entityType: any, entities: any[], entityTitle: string) => {
       setGlobalDetailView({
         stageName: stage.name,
         entityTitle,
-        entities
+        entities,
+        entityType,
+        stageId: stage.id,
+        stageNumber: stage.stageNumber
       });
     };
 
@@ -377,6 +520,27 @@ export function AllStagesView({ showOnlyActive = false, showOnlySubActive = fals
                           </>
                         )}
                       </Button>
+                      
+                      {/* Delete Stage Button - Only for ADMIN */}
+                      {canDelete && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteStage(stage.id, stage.name)}
+                          disabled={toggleLoading.has(`delete-${stage.id}`)}
+                          className="transition-all bg-gray-800 text-red-500 border-red-600 hover:bg-red-900 hover:text-red-300"
+                          title={`Stufe "${stage.name}" löschen`}
+                        >
+                          {toggleLoading.has(`delete-${stage.id}`) ? (
+                            <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <>
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Stufe löschen
+                            </>
+                          )}
+                        </Button>
+                      )}
                   </div>
                 )}
               </div>
